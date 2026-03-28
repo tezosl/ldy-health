@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lodaya Family Health Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', -apple-system, sans-serif; background: #FAFAF8; min-height: 100vh; color: #1A1A1A; }
+.serif { font-family: 'Instrument Serif', Georgia, serif; }
+.container { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+
+/* HEADER */
+.header { border-bottom: 2px solid #1A1A1A; padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.header h1 { font-family: 'Instrument Serif', Georgia, serif; font-size: 26px; font-weight: 400; letter-spacing: -0.5px; }
+.header p { font-size: 13px; color: #5C5C5C; margin-top: 4px; }
+.header-modes { display: flex; gap: 8px; }
+.mode-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #E8E6E1; background: #fff; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; color: #5C5C5C; transition: all 0.2s; }
+.mode-btn.active { background: #1A1A1A; color: #fff; border-color: #1A1A1A; }
+
+/* PERSON CARDS */
+.person-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+@media (min-width: 640px) { .person-grid { grid-template-columns: repeat(4, 1fr); } }
+.person-card { cursor: pointer; background: #fff; color: #1A1A1A; border: 1px solid #E8E6E1; border-radius: 12px; padding: 14px 16px; transition: all 0.2s; text-align: left; width: 100%; }
+.person-card.active { background: #1A1A1A; color: #fff; border: 2px solid #1A1A1A; }
+.person-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.person-name { font-family: 'Instrument Serif', Georgia, serif; font-size: 17px; font-weight: 400; }
+.person-meta { font-size: 11px; opacity: 0.65; margin-top: 1px; }
+.score-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.status-dots { display: flex; gap: 12px; margin-top: 6px; }
+.dot-item { display: flex; align-items: center; gap: 5px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.dot-label { font-size: 12px; font-weight: 600; }
+
+/* TABS */
+.tab-nav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid #E8E6E1; overflow-x: auto; }
+.tab-btn { background: none; border: none; cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 400; color: #5C5C5C; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+.tab-btn.active { font-weight: 600; color: #1A1A1A; border-bottom: 2px solid #1A1A1A; }
+
+/* TRACKING TABS (top level) */
+.track-tab-nav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid #E8E6E1; overflow-x: auto; }
+.track-tab-btn { background: none; border: none; cursor: pointer; padding: 10px 16px; font-size: 13px; font-weight: 400; color: #5C5C5C; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+.track-tab-btn.active { font-weight: 600; color: #1A1A1A; border-bottom: 2px solid #1A1A1A; }
+
+/* SUMMARY BOXES */
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+.summary-box { border-radius: 10px; padding: 16px; text-align: center; }
+.summary-box.red { background: #FEF2F0; border: 1px solid #F5D0CA; }
+.summary-box.orange { background: #FFF7EC; border: 1px solid #F5DDB0; }
+.summary-box.green { background: #F0FAF3; border: 1px solid #C2E5CE; }
+.summary-number { font-family: 'Instrument Serif', Georgia, serif; font-size: 32px; }
+.summary-number.red { color: #D94F3B; }
+.summary-number.orange { color: #D97B1A; }
+.summary-number.green { color: #2D8A4E; }
+.summary-label { font-size: 11px; font-weight: 500; color: #5C5C5C; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+/* FINDING CARDS */
+.finding-card { border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+.finding-card.urgent { background: #FEF2F0; border: 1px solid #F5D0CA; border-left: 4px solid #D94F3B; }
+.finding-card.watch { background: #FFF7EC; border: 1px solid #F5DDB0; border-left: 4px solid #D97B1A; }
+.finding-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; }
+.finding-name { font-weight: 600; font-size: 14px; }
+.finding-value { font-size: 12px; color: #5C5C5C; margin-bottom: 4px; }
+.finding-value strong { color: #1A1A1A; }
+.finding-note { font-size: 12px; color: #5C5C5C; line-height: 1.5; }
+.badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; background: #D94F3B; color: #fff; }
+
+/* HIGHLIGHTS */
+.highlights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
+.highlight-item { font-size: 13px; padding: 8px 12px; background: #F0FAF3; border: 1px solid #C2E5CE; border-radius: 8px; display: flex; justify-content: space-between; }
+.highlight-value { color: #2D8A4E; font-weight: 600; }
+
+/* PLAN */
+.plan-card { background: #EBF4FF; border: 1px solid #BCD4F0; border-radius: 10px; padding: 20px; }
+.plan-item { display: flex; gap: 12px; margin-bottom: 14px; font-size: 14px; align-items: flex-start; }
+.plan-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: #2B6CB0; color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.plan-text { line-height: 1.5; }
+
+/* FAMILY PATTERNS */
+.pattern-card { background: #fff; border: 1px solid #E8E6E1; border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+.pattern-name { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+.pattern-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.pattern-tag { font-size: 11px; padding: 3px 10px; border-radius: 12px; background: #F5F5F2; color: #5C5C5C; font-weight: 500; }
+.pattern-note { font-size: 13px; color: #5C5C5C; line-height: 1.5; }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { border-bottom: 2px solid #1A1A1A; }
+th { text-align: left; padding: 8px 10px; font-weight: 600; }
+th:not(:first-child) { text-align: center; }
+tbody tr { border-bottom: 1px solid #E8E6E1; }
+td { padding: 8px 10px; }
+td:not(:first-child) { text-align: center; font-weight: 600; border-radius: 4px; }
+td.ref { color: #5C5C5C; font-size: 12px; font-weight: 400; text-align: center; }
+td.r { color: #D94F3B; background: #FEF2F0; }
+td.o { color: #D97B1A; background: #FFF7EC; }
+td.g { color: #2D8A4E; }
+
+/* TRACKING CARDS */
+.track-card { background: #fff; border: 1px solid #E8E6E1; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.track-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.track-card-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 18px; font-weight: 400; }
+.track-card-subtitle { font-size: 12px; color: #5C5C5C; margin-top: 2px; }
+
+/* FORM ELEMENTS */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+@media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+@media (max-width: 560px) { .form-row-3 { grid-template-columns: 1fr 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 12px; font-weight: 600; color: #5C5C5C; text-transform: uppercase; letter-spacing: 0.4px; }
+.form-input { padding: 9px 12px; border: 1px solid #E8E6E1; border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: #FAFAF8; color: #1A1A1A; outline: none; transition: border 0.15s; }
+.form-input:focus { border-color: #1A1A1A; background: #fff; }
+select.form-input { cursor: pointer; }
+.form-textarea { padding: 9px 12px; border: 1px solid #E8E6E1; border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: #FAFAF8; color: #1A1A1A; outline: none; resize: vertical; min-height: 72px; transition: border 0.15s; }
+.form-textarea:focus { border-color: #1A1A1A; background: #fff; }
+.btn-primary { padding: 10px 20px; background: #1A1A1A; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-secondary { padding: 8px 16px; background: #fff; color: #1A1A1A; border: 1px solid #E8E6E1; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.btn-secondary:hover { border-color: #1A1A1A; }
+.btn-danger { padding: 5px 10px; background: none; color: #D94F3B; border: 1px solid #F5D0CA; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* LOG LIST */
+.log-list { margin-top: 16px; }
+.log-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #F0EFEC; gap: 8px; }
+.log-item:last-child { border-bottom: none; }
+.log-item-main { flex: 1; }
+.log-item-title { font-size: 14px; font-weight: 600; }
+.log-item-meta { font-size: 12px; color: #5C5C5C; margin-top: 2px; }
+.log-item-value { font-family: 'Instrument Serif', Georgia, serif; font-size: 20px; color: #1A1A1A; white-space: nowrap; }
+
+/* CHART CONTAINER */
+.chart-wrap { position: relative; height: 200px; margin-top: 16px; }
+
+/* STAT BOXES (Samsung) */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+@media (max-width: 480px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+.stat-box { border-radius: 10px; padding: 16px; text-align: center; }
+.stat-box.blue { background: #EBF4FF; border: 1px solid #BCD4F0; }
+.stat-box.pink { background: #FEF0F6; border: 1px solid #F5C5DC; }
+.stat-box.purple { background: #F3F0FF; border: 1px solid #D4C5F5; }
+.stat-box.green { background: #F0FAF3; border: 1px solid #C2E5CE; }
+.stat-value { font-family: 'Instrument Serif', Georgia, serif; font-size: 28px; }
+.stat-value.blue { color: #2B6CB0; }
+.stat-value.pink { color: #B0406B; }
+.stat-value.purple { color: #6B46C1; }
+.stat-value.green { color: #2D8A4E; }
+.stat-label { font-size: 11px; font-weight: 500; color: #5C5C5C; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 4px; }
+
+/* SETUP GUIDE */
+.setup-guide { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+.setup-guide-title { font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.setup-step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+.setup-step-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #F59E0B; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.setup-step-text { font-size: 13px; line-height: 1.5; color: #5C5C5C; }
+.setup-step-text strong { color: #1A1A1A; }
+.code-block { background: #1A1A1A; color: #c8ff3e; font-family: 'Courier New', monospace; font-size: 12px; padding: 12px 14px; border-radius: 8px; margin: 8px 0; overflow-x: auto; white-space: pre; line-height: 1.6; }
+.sheet-input-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+.sheet-input-row .form-input { flex: 1; }
+
+/* DIET PLAN */
+.meal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
+.meal-box { background: #FAFAF8; border: 1px solid #E8E6E1; border-radius: 10px; padding: 14px; }
+.meal-box-label { font-size: 11px; font-weight: 600; color: #5C5C5C; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.meal-box-content { font-size: 13px; color: #1A1A1A; line-height: 1.5; min-height: 40px; }
+
+/* WORKOUT TAGS */
+.workout-type-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.workout-tag { padding: 5px 12px; border-radius: 20px; border: 1px solid #E8E6E1; font-size: 12px; font-weight: 500; cursor: pointer; background: #fff; color: #5C5C5C; transition: all 0.15s; }
+.workout-tag.selected { background: #1A1A1A; color: #fff; border-color: #1A1A1A; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 32px 20px; color: #8A8A84; }
+.empty-state-icon { font-size: 32px; margin-bottom: 8px; }
+.empty-state-text { font-size: 14px; }
+
+/* COMING SOON */
+.coming-soon { margin-top: 36px; padding: 20px; background: #F5F5F2; border-radius: 10px; border: 1px dashed #D1D0CC; }
+.coming-soon h4 { font-family: 'Instrument Serif', Georgia, serif; font-size: 16px; margin-bottom: 8px; color: #5C5C5C; }
+.tag-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.soon-tag { font-size: 12px; padding: 5px 12px; border-radius: 20px; background: #EAEAE6; color: #8A8A84; }
+
+/* DISCLAIMER */
+.disclaimer { margin-top: 24px; padding: 14px 18px; background: #F5F5F2; border-radius: 8px; font-size: 11px; color: #8A8A84; line-height: 1.6; }
+
+.view-all { background: none; border: none; cursor: pointer; font-size: 13px; color: #D94F3B; font-weight: 600; padding: 8px 0; font-family: 'DM Sans', sans-serif; }
+.section-title { font-family: 'Instrument Serif', Georgia, serif; font-size: 18px; margin-bottom: 12px; }
+.section-title.red { color: #D94F3B; }
+.section-title.orange { color: #D97B1A; }
+.section-title.blue { color: #2B6CB0; }
+.hidden { display: none; }
+.divider { border: none; border-top: 1px solid #E8E6E1; margin: 20px 0; }
+
+/* PERSON SELECTOR STRIP for tracking */
+.person-strip { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.person-strip-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #E8E6E1; background: #fff; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; color: #5C5C5C; transition: all 0.15s; }
+.person-strip-btn.active { background: #1A1A1A; color: #fff; border-color: #1A1A1A; }
+
+/* WEIGHT DELTA */
+.weight-delta { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+.weight-delta.down { background: #F0FAF3; color: #2D8A4E; }
+.weight-delta.up { background: #FEF2F0; color: #D94F3B; }
+.weight-delta.same { background: #F5F5F2; color: #8A8A84; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <h1 class="serif">Lodaya Family Health</h1>
+      <p>Blood work &middot; Fitness &middot; Nutrition &middot; March 2026 &middot; Bengaluru</p>
+    </div>
+    <div class="header-modes">
+      <button class="mode-btn active" id="modeHealth" onclick="switchMode('health')">Health Reports</button>
+      <button class="mode-btn" id="modeTracking" onclick="switchMode('tracking')">Daily Tracking</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- HEALTH REPORTS MODE                            -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div id="healthMode">
+    <div class="person-grid" id="personGrid"></div>
+    <div class="tab-nav" id="tabNav"></div>
+    <div id="tabContent"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- DAILY TRACKING MODE                            -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div id="trackingMode" class="hidden">
+    <div class="track-tab-nav">
+      <button class="track-tab-btn active" onclick="switchTrackTab('weight')">⚖️ Weight</button>
+      <button class="track-tab-btn" onclick="switchTrackTab('workout')">🏋️ Workouts</button>
+      <button class="track-tab-btn" onclick="switchTrackTab('diet')">🥗 Diet Plans</button>
+      <button class="track-tab-btn" onclick="switchTrackTab('samsung')">⌚ Samsung Health</button>
+    </div>
+    <div id="trackContent"></div>
+  </div>
+
+  <!-- COMING SOON -->
+  <div class="coming-soon">
+    <h4 class="serif">Coming Soon</h4>
+    <div class="tag-list">
+      <span class="soon-tag">Apple Health</span>
+      <span class="soon-tag">Woosh Wearable</span>
+      <span class="soon-tag">Medication Tracker</span>
+      <span class="soon-tag">Lab Trend Charts</span>
+      <span class="soon-tag">Doctor Visit Log</span>
+      <span class="soon-tag">Sleep Tracking</span>
+    </div>
+  </div>
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This dashboard is for informational purposes only and is not a substitute for professional medical advice. All values should be interpreted by a qualified physician. Data from Orange Health Labs, March 2026.
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// HEALTH DATA
+// ═══════════════════════════════════════════════════════
+const familyData = {
+  geeta: {
+    name: "Geeta", age: 52, gender: "F", date: "18 Mar 2026",
+    actionCount: 8, watchCount: 5, normalCount: 28,
+    urgent: [
+      { name: "Thyroid – Hashimoto's", value: "TSH 15.72", unit: "µIU/mL", ref: "0.35–4.94", badge: "Critical", note: "TSH 3x high, T4 low (4.46). Autoimmune hypothyroidism – root cause of many other findings. Start levothyroxine urgently." },
+      { name: "Vitamin D", value: "9.6", unit: "ng/mL", ref: "30–100", badge: "Severe", note: "Severely deficient – less than a third of minimum. Aggressive loading needed: 60K IU/week x 8–12 weeks." },
+      { name: "Vitamin B12", value: "<148", unit: "pg/mL", ref: "187–883", badge: "Deficient", note: "Below detectable range. Injections likely needed. Hypothyroidism impairs B12 absorption." },
+      { name: "Lipid Profile", value: "Multiple", unit: "", ref: "", badge: "High Risk", note: "HDL 29 (critically low), TG 199, LDL 135, Total Chol 204, Chol/HDL 7.0. Hypothyroidism is the main driver." },
+      { name: "HOMA-IR (est.)", value: "Insulin 21.6", unit: "µIU/mL", ref: "2.3–26", badge: "Watch", note: "Insulin in upper range with glucose 97 – early insulin resistance pattern. Hypothyroidism worsens this." },
+      { name: "hsCRP", value: "3.577", unit: "mg/L", ref: ">3 High", badge: "High", note: "Mildly elevated cardiovascular risk marker. Monitor with thyroid treatment – should improve." },
+      { name: "Lipoprotein(a)", value: "34", unit: "mg/dL", ref: "0–30", badge: "Elevated", note: "Genetic CVD risk marker above range. Adds to poor lipid picture. Largely unaffected by lifestyle." },
+      { name: "Bilirubin Direct", value: "0.49", unit: "mg/dL", ref: "0–0.3", badge: "High", note: "Mildly elevated direct bilirubin. Could be transient. Recheck at follow-up with LFT." },
+    ],
+    watch: [
+      { name: "Platelet Hematocrit", value: "0.159%", ref: "0.2–0.5" },
+      { name: "RDW-CV", value: "14.9%", ref: "11.6–14" },
+      { name: "hsCRP", value: "3.577 mg/L", ref: "<3 average" },
+      { name: "Folic Acid (prior)", value: "4.65 ng/mL", ref: "3.96–16.76" },
+      { name: "Cortisol AM (prior)", value: "4.697 µg/dL", ref: "4.5–24" },
+    ],
+    highlights: [
+      { label: "HbA1c", value: "5.3%" }, { label: "Liver", value: "Normal" },
+      { label: "Kidney", value: "eGFR 113" }, { label: "Amylase", value: "59" },
+      { label: "CA-125", value: "20.1 (Normal)" }, { label: "Ferritin", value: "74.4" },
+    ],
+    actions: [
+      "See doctor this week – start thyroid medication (levothyroxine)",
+      "B12 injections – below detectable levels",
+      "Vitamin D aggressive loading – 60K IU/week for 8–12 weeks",
+      "Recheck lipids in 3 months after thyroid treatment starts",
+      "Monitor direct bilirubin at next LFT",
+      "Lifestyle changes for insulin resistance",
+      "Repeat hsCRP in 3–4 weeks",
+      "Folate supplementation alongside B12",
+    ],
+  },
+  paresh: {
+    name: "Paresh", age: 59, gender: "M", date: "18 Mar 2026",
+    actionCount: 4, watchCount: 5, normalCount: 32,
+    urgent: [
+      { name: "Vitamin D", value: "19.5", unit: "ng/mL", ref: "30–100", badge: "Deficient", note: "Just below deficient cutoff at 59. Critical for bone health and immunity. Start 60K IU/week immediately." },
+      { name: "Eosinophilia", value: "AEC 809", unit: "/mm³", ref: "20–500", badge: "High", note: "Eosinophils 10.2%, AEC 809. Lab flagged – correlate with IgE levels. Allergy workup needed." },
+      { name: "hsCRP", value: "3.549", unit: "mg/L", ref: ">3 High", badge: "Elevated", note: "Just in high cardiovascular risk zone. Repeat in 3–4 weeks. Likely linked to allergic inflammation." },
+      { name: "Sodium", value: "135", unit: "mmol/L", ref: "137–145", badge: "Low", note: "Mildly below range. Monitor hydration. Not alarming in isolation but worth flagging to doctor." },
+    ],
+    watch: [
+      { name: "ALP", value: "106 U/L", ref: "38–126 (upper end)" },
+      { name: "AST/ALT Ratio", value: "1.4", ref: "0.7–1.4 (at limit)" },
+      { name: "HDL", value: "42 mg/dL", ref: ">50 ideal" },
+      { name: "AEC / Eosinophils", value: "809 / 10.2%", ref: "20–500 / 1–6%" },
+      { name: "Homocysteine (prior)", value: "16.69 µmol/L", ref: "6.6–14.8" },
+    ],
+    highlights: [
+      { label: "Lipids", value: "LDL 84" }, { label: "HbA1c", value: "5.3%" },
+      { label: "Thyroid", value: "TSH 2.08" }, { label: "Kidney", value: "eGFR 102" },
+      { label: "PSA", value: "0.522" }, { label: "Ferritin", value: "47.2" },
+    ],
+    actions: [
+      "Vitamin D – 60K IU/week (confirmed deficient at 19.5)",
+      "Allergy workup – AEC 809 + eosinophils 10.2%",
+      "Repeat hsCRP in 3–4 weeks",
+      "Monitor sodium – mild hyponatremia, check hydration",
+    ],
+  },
+  megh: {
+    name: "Megh", age: 30, gender: "M", date: "24 Mar 2026",
+    actionCount: 6, watchCount: 4, normalCount: 32,
+    urgent: [
+      { name: "Vitamin B12", value: "<148", unit: "pg/mL", ref: "187–883", badge: "Deficient", note: "Below detectable range. Start methylcobalamin immediately. Family-wide pattern." },
+      { name: "Vitamin D", value: "13.7", unit: "ng/mL", ref: "30–100", badge: "Deficient", note: "Clearly deficient. Loading dose: 60K IU/week x 8 weeks. All four family members deficient." },
+      { name: "hsCRP", value: "7.552", unit: "mg/L", ref: ">3 High", badge: "High", note: "Significantly elevated. CRP also 12.8 (above range). Repeat in 3–4 weeks." },
+      { name: "Lipid Profile", value: "Multiple", unit: "", ref: "", badge: "Abnormal", note: "HDL 37 (low), LDL 131, Non-HDL 149, Chol/HDL 5.0. Poor balance for age 30." },
+      { name: "Phosphorus", value: "5.0", unit: "mg/dL", ref: "2.5–4.5", badge: "High", note: "Mildly above range. Could be dietary or linked to Vit D deficiency. Recheck at follow-up." },
+      { name: "Amylase", value: "117", unit: "U/L", ref: "30–110", badge: "High", note: "Mildly above range. Lipase 107 is normal. Monitor – recheck if any abdominal symptoms." },
+    ],
+    watch: [
+      { name: "Eosinophils", value: "5.8% / AEC 497", ref: "1–6% / 20–500" },
+      { name: "ALC (Lymphocytes)", value: "3479 /mm³", ref: "1000–3000" },
+      { name: "Creatinine", value: "0.55 mg/dL", ref: "0.66–1.25" },
+      { name: "Homocysteine (prior)", value: "32.63 µmol/L", ref: "6.6–14.8" },
+    ],
+    highlights: [
+      { label: "HbA1c", value: "5.2%" }, { label: "Thyroid", value: "TSH 2.48" },
+      { label: "Liver", value: "Normal" }, { label: "Kidney", value: "eGFR 137" },
+      { label: "PSA", value: "0.348" }, { label: "Ferritin", value: "60.2" },
+    ],
+    actions: [
+      "Start B12 supplementation (methylcobalamin) immediately",
+      "Vitamin D loading dose – 60K IU/week for 8 weeks",
+      "Repeat hsCRP in 3–4 weeks – very high at 7.552",
+      "Lifestyle changes for lipids – HDL 37 at age 30",
+      "Monitor amylase – recheck if abdominal symptoms",
+      "Consider folate supplementation for homocysteine",
+    ],
+  },
+  tejas: {
+    name: "Tejas", age: 31, gender: "M", date: "18 Mar 2026",
+    actionCount: 4, watchCount: 5, normalCount: 33,
+    urgent: [
+      { name: "Vitamin D", value: "13.4", unit: "ng/mL", ref: "30–100", badge: "Deficient", note: "Deficient. All four family members deficient. Start 60K IU/week x 8 weeks." },
+      { name: "Lipoprotein(a)", value: "36", unit: "mg/dL", ref: "0–30", badge: "Elevated", note: "Above range. Lp(a) is a genetic CVD risk marker. Largely unaffected by lifestyle. Discuss with cardiologist." },
+      { name: "HDL", value: "37", unit: "mg/dL", ref: ">50", badge: "Low", note: "HDL below ideal for 31yr male. Combined with LDL 112 and Lp(a) 36 – lipid picture needs attention." },
+      { name: "LDL", value: "112", unit: "mg/dL", ref: "<100", badge: "Above Optimal", note: "Above optimal. Non-HDL 131 also borderline. Lifestyle intervention: diet and exercise." },
+    ],
+    watch: [
+      { name: "RBC", value: "5.85 mill/mm³", ref: "4.5–5.5" },
+      { name: "HCT (Hematocrit)", value: "51.7%", ref: "40–50" },
+      { name: "Bilirubin Total", value: "1.38 mg/dL", ref: "0.2–1.3" },
+      { name: "hsCRP", value: "1.351 mg/L", ref: "1–3 average" },
+      { name: "Sodium", value: "136 mmol/L", ref: "137–145" },
+    ],
+    highlights: [
+      { label: "HbA1c", value: "4.4%" }, { label: "B12", value: "783" },
+      { label: "Thyroid", value: "TSH 1.13" }, { label: "Kidney", value: "eGFR 124" },
+      { label: "Insulin", value: "5.07" }, { label: "Ferritin", value: "30.7" },
+    ],
+    actions: [
+      "Vitamin D – 60K IU/week x 8 weeks (13.4, deficient)",
+      "Lifestyle intervention for lipids – HDL 37, LDL 112, Lp(a) 36",
+      "Monitor RBC / HCT – mildly elevated, recheck in 3 months",
+      "Check Lp(a) context – discuss with doctor given family CVD history",
+    ],
+  },
+};
+
+const sharedConcerns = [
+  { concern: "Vitamin D Deficiency", who: ["Geeta (9.6)", "Megh (13.7)", "Tejas (13.4)", "Paresh (19.5)"], note: "All four family members deficient or insufficient. Lifestyle-related – indoor work, limited sun exposure. Start supplementation across the board." },
+  { concern: "Low HDL Cholesterol", who: ["Geeta (29)", "Megh (37)", "Tejas (37)"], note: "Three members have HDL below the recommended threshold. Geeta's is critically low (29). Diet, exercise, and treating Geeta's thyroid are key interventions." },
+  { concern: "Elevated Lipoprotein(a)", who: ["Tejas (36)", "Geeta (34)"], note: "Both Tejas and Geeta have Lp(a) above 30 mg/dL. This is largely genetic. Discuss with a cardiologist for long-term monitoring." },
+  { concern: "Vitamin B12 Deficiency", who: ["Geeta (<148)", "Megh (<148)"], note: "Both below detectable range. Paresh and Tejas are adequate. Geeta and Megh need immediate supplementation – injections for Geeta, oral methylcobalamin for Megh." },
+  { concern: "Elevated Inflammation (hsCRP)", who: ["Megh (7.55)", "Paresh (3.55)", "Geeta (3.58)"], note: "Three members show elevated hsCRP. Megh's is significantly high. Repeat testing in 3–4 weeks. Treating Geeta's thyroid should help reduce her value." },
+];
+
+// ═══════════════════════════════════════════════════════
+// HEALTH RENDER STATE
+// ═══════════════════════════════════════════════════════
+let selectedPerson = 'geeta';
+let selectedTab = 'overview';
+let currentMode = 'health';
+
+function getScoreColor(count) {
+  if (count >= 7) return '#D94F3B';
+  if (count >= 4) return '#D97B1A';
+  return '#2D8A4E';
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('healthMode').classList.toggle('hidden', mode !== 'health');
+  document.getElementById('trackingMode').classList.toggle('hidden', mode !== 'tracking');
+  document.getElementById('modeHealth').classList.toggle('active', mode === 'health');
+  document.getElementById('modeTracking').classList.toggle('active', mode === 'tracking');
+  if (mode === 'tracking') renderTrackContent();
+}
+
+function renderPersonCards() {
+  const grid = document.getElementById('personGrid');
+  grid.innerHTML = ['geeta','paresh','megh','tejas'].map(key => {
+    const d = familyData[key];
+    const isActive = key === selectedPerson;
+    const sc = getScoreColor(d.actionCount);
+    const dr = isActive ? '#FCA5A5' : '#D94F3B';
+    const do_ = isActive ? '#FBBF24' : '#D97B1A';
+    const dg = isActive ? '#6EE7A0' : '#2D8A4E';
+    return `<button class="person-card${isActive?' active':''}" onclick="selectPerson('${key}')">
+      <div class="person-card-top">
+        <div><div class="person-name">${d.name}</div><div class="person-meta">${d.age}yr ${d.gender==='M'?'Male':'Female'}</div></div>
+        <div class="score-circle" style="border:3px solid ${isActive?sc+'88':sc};color:${isActive?'#fff':sc}">${d.actionCount}</div>
+      </div>
+      <div class="status-dots">
+        <div class="dot-item"><div class="dot" style="background:${dr}"></div><span class="dot-label" style="color:${dr}">${d.actionCount}</span></div>
+        <div class="dot-item"><div class="dot" style="background:${do_}"></div><span class="dot-label" style="color:${do_}">${d.watchCount}</span></div>
+        <div class="dot-item"><div class="dot" style="background:${dg}"></div><span class="dot-label" style="color:${dg}">${d.normalCount}+</span></div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function renderTabs() {
+  const d = familyData[selectedPerson];
+  const tabs = [
+    {id:'overview',label:'Overview'},
+    {id:'urgent',label:`Action (${d.actionCount})`},
+    {id:'watch',label:`Watch (${d.watchCount})`},
+    {id:'plan',label:'Plan'},
+    {id:'family',label:'Family Patterns'},
+  ];
+  document.getElementById('tabNav').innerHTML = tabs.map(t =>
+    `<button class="tab-btn${selectedTab===t.id?' active':''}" onclick="selectTab('${t.id}')">${t.label}</button>`
+  ).join('');
+}
+
+function badgeHtml(text) { return `<span class="badge">${text}</span>`; }
+
+function renderUrgentCards(items, limit) {
+  const shown = limit ? items.slice(0, limit) : items;
+  return shown.map(f => `
+    <div class="finding-card urgent">
+      <div class="finding-card-top"><span class="finding-name">${f.name}</span>${badgeHtml(f.badge)}</div>
+      <div class="finding-value"><strong>${f.value}</strong> ${f.unit}${f.ref?` &middot; Ref: ${f.ref}`:''}</div>
+      <p class="finding-note">${f.note}</p>
+    </div>`).join('');
+}
+
+function renderContent() {
+  const d = familyData[selectedPerson];
+  let html = '';
+  if (selectedTab === 'overview') {
+    html += `<div class="summary-grid">
+      <div class="summary-box red"><div class="summary-number red">${d.actionCount}</div><div class="summary-label">Need Action</div></div>
+      <div class="summary-box orange"><div class="summary-number orange">${d.watchCount}</div><div class="summary-label">Watch</div></div>
+      <div class="summary-box green"><div class="summary-number green">${d.normalCount}+</div><div class="summary-label">Normal</div></div>
+    </div>
+    <div style="margin-bottom:24px">
+      <h3 class="section-title" style="color:#2D8A4E">What's Looking Good</h3>
+      <div class="highlights-grid">${d.highlights.map(h=>`<div class="highlight-item"><span>${h.label}</span><span class="highlight-value">${h.value}</span></div>`).join('')}</div>
+    </div>
+    <h3 class="section-title red" style="margin-bottom:12px">Top Priorities</h3>
+    ${renderUrgentCards(d.urgent,3)}
+    ${d.urgent.length>3?`<button class="view-all" onclick="selectTab('urgent')">View all ${d.actionCount} findings &rarr;</button>`:''}`;
+  }
+  if (selectedTab === 'urgent') {
+    html += `<h3 class="section-title red" style="margin-bottom:16px">All Findings Needing Action – ${d.name}</h3>${renderUrgentCards(d.urgent)}`;
+  }
+  if (selectedTab === 'watch') {
+    html += `<h3 class="section-title orange" style="margin-bottom:16px">Worth Watching – ${d.name}</h3>`;
+    html += d.watch.map(w=>`<div class="finding-card watch"><div class="finding-card-top"><span class="finding-name">${w.name}</span><span style="font-size:12px;color:#5C5C5C">Ref: ${w.ref}</span></div><div style="font-size:13px;font-weight:600;margin-top:4px">${w.value}</div></div>`).join('');
+  }
+  if (selectedTab === 'plan') {
+    html += `<h3 class="section-title blue" style="margin-bottom:16px">Action Plan – ${d.name}</h3>
+    <div class="plan-card">${d.actions.map((a,i)=>`<div class="plan-item"><div class="plan-num">${i+1}</div><span class="plan-text">${a}</span></div>`).join('')}</div>`;
+  }
+  if (selectedTab === 'family') {
+    html += `<h3 class="serif" style="font-size:20px;margin-bottom:8px">Family-Wide Patterns</h3>
+    <p style="font-size:13px;color:#5C5C5C;margin-bottom:20px">Shared health concerns across the Lodaya family.</p>
+    ${sharedConcerns.map(c=>`<div class="pattern-card"><div class="pattern-name">${c.concern}</div><div class="pattern-tags">${c.who.map(w=>`<span class="pattern-tag">${w}</span>`).join('')}</div><p class="pattern-note">${c.note}</p></div>`).join('')}
+    <h3 class="serif" style="font-size:18px;margin-top:28px;margin-bottom:12px">Key Metrics Comparison</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Marker</th><th>Geeta (52F)</th><th>Paresh (59M)</th><th>Megh (30M)</th><th>Tejas (31M)</th><th>Ref</th></tr></thead>
+      <tbody>${[
+        {m:"Vitamin D",g:"9.6",p:"19.5",me:"13.7",t:"13.4",ref:"30–100",gS:"r",pS:"r",meS:"r",tS:"r"},
+        {m:"Vitamin B12",g:"<148",p:"283",me:"<148",t:"783",ref:"187–883",gS:"r",pS:"g",meS:"r",tS:"g"},
+        {m:"HbA1c",g:"5.3%",p:"5.3%",me:"5.2%",t:"4.4%",ref:"<5.7%",gS:"g",pS:"g",meS:"g",tS:"g"},
+        {m:"HDL",g:"29",p:"42",me:"37",t:"37",ref:">50",gS:"r",pS:"o",meS:"r",tS:"r"},
+        {m:"LDL",g:"135",p:"84",me:"131",t:"112",ref:"<100",gS:"r",pS:"g",meS:"r",tS:"o"},
+        {m:"hsCRP",g:"3.58",p:"3.55",me:"7.55",t:"1.35",ref:"<1 low",gS:"r",pS:"r",meS:"r",tS:"o"},
+        {m:"TSH",g:"15.72",p:"2.08",me:"2.48",t:"1.13",ref:"0.35–4.94",gS:"r",pS:"g",meS:"g",tS:"g"},
+        {m:"Lp(a)",g:"34",p:"10",me:"9",t:"36",ref:"0–30",gS:"r",pS:"g",meS:"g",tS:"r"},
+        {m:"Ferritin",g:"74.4",p:"47.2",me:"60.2",t:"30.7",ref:"Normal",gS:"g",pS:"g",meS:"g",tS:"g"},
+        {m:"eGFR",g:"113",p:"102",me:"137",t:"124",ref:"≥90",gS:"g",pS:"g",meS:"g",tS:"g"},
+      ].map(row=>`<tr><td style="font-weight:500">${row.m}</td><td class="${row.gS}">${row.g}</td><td class="${row.pS}">${row.p}</td><td class="${row.meS}">${row.me}</td><td class="${row.tS}">${row.t}</td><td class="ref">${row.ref}</td></tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }
+  document.getElementById('tabContent').innerHTML = html;
+}
+
+function selectPerson(key) {
+  selectedPerson = key;
+  if (['urgent','watch','plan'].includes(selectedTab)) selectedTab = 'overview';
+  renderPersonCards(); renderTabs(); renderContent();
+}
+function selectTab(tab) { selectedTab = tab; renderTabs(); renderContent(); }
+
+// Init health mode
+renderPersonCards(); renderTabs(); renderContent();
+
+// ═══════════════════════════════════════════════════════
+// TRACKING STATE & STORAGE
+// ═══════════════════════════════════════════════════════
+let currentTrackTab = 'weight';
+let currentTrackPerson = 'tejas';
+let weightChart = null;
+
+const MEMBERS = ['geeta','paresh','megh','tejas'];
+const MEMBER_LABELS = {geeta:'Geeta',paresh:'Paresh',megh:'Megh',tejas:'Tejas'};
+
+function getStore(key, def) {
+  try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; }
+}
+function setStore(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function switchTrackTab(tab) {
+  currentTrackTab = tab;
+  document.querySelectorAll('.track-tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['weight','workout','diet','samsung'][i] === tab);
+  });
+  renderTrackContent();
+}
+
+function renderPersonStrip(activeKey, onClickFn) {
+  return `<div class="person-strip">${MEMBERS.map(k =>
+    `<button class="person-strip-btn${k===activeKey?' active':''}" onclick="${onClickFn}('${k}')">${MEMBER_LABELS[k]}</button>`
+  ).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// MAIN TRACK CONTENT ROUTER
+// ═══════════════════════════════════════════════════════
+function renderTrackContent() {
+  if (currentTrackTab === 'weight') renderWeightTab();
+  else if (currentTrackTab === 'workout') renderWorkoutTab();
+  else if (currentTrackTab === 'diet') renderDietTab();
+  else if (currentTrackTab === 'samsung') renderSamsungTab();
+}
+
+// ═══════════════════════════════════════════════════════
+// WEIGHT TAB
+// ═══════════════════════════════════════════════════════
+function renderWeightTab() {
+  const entries = getStore(`weight_${currentTrackPerson}`, []);
+  const latest = entries.length ? entries[entries.length-1] : null;
+  const prev = entries.length > 1 ? entries[entries.length-2] : null;
+  let deltaHtml = '';
+  if (latest && prev) {
+    const diff = (parseFloat(latest.weight) - parseFloat(prev.weight)).toFixed(1);
+    const cls = diff < 0 ? 'down' : diff > 0 ? 'up' : 'same';
+    const sign = diff > 0 ? '+' : '';
+    deltaHtml = `<span class="weight-delta ${cls}">${sign}${diff} kg</span>`;
+  }
+
+  document.getElementById('trackContent').innerHTML = `
+    <div class="track-card">
+      <div class="track-card-header">
+        <div><div class="track-card-title">Weight Log</div><div class="track-card-subtitle">Track daily weight for each family member</div></div>
+        ${latest ? `<div style="text-align:right"><div style="font-family:'Instrument Serif',serif;font-size:28px">${latest.weight} kg</div>${deltaHtml}</div>` : ''}
+      </div>
+      ${renderPersonStrip(currentTrackPerson, 'setWeightPerson')}
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="wDate" value="${new Date().toISOString().split('T')[0]}"></div>
+        <div class="form-group"><label class="form-label">Weight (kg)</label><input type="number" step="0.1" class="form-input" id="wKg" placeholder="e.g. 68.5"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Body Fat % (optional)</label><input type="number" step="0.1" class="form-input" id="wFat" placeholder="e.g. 22.0"></div>
+        <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="wNote" placeholder="e.g. Post workout"></div>
+      </div>
+      <button class="btn-primary" onclick="addWeight()">Log Weight</button>
+    </div>
+
+    <div class="track-card">
+      <div class="track-card-title" style="margin-bottom:4px">Trend – ${MEMBER_LABELS[currentTrackPerson]}</div>
+      <div class="track-card-subtitle" style="margin-bottom:0">Last ${Math.min(entries.length,30)} entries</div>
+      ${entries.length >= 2 ? `<div class="chart-wrap"><canvas id="weightChart"></canvas></div>` : `<div class="empty-state"><div class="empty-state-icon">📉</div><div class="empty-state-text">Log at least 2 entries to see your trend</div></div>`}
+      ${entries.length ? `<div class="log-list">${[...entries].reverse().slice(0,8).map((e,i)=>`
+        <div class="log-item">
+          <div class="log-item-main">
+            <div class="log-item-title">${formatDate(e.date)}</div>
+            <div class="log-item-meta">${e.fat?`Body fat: ${e.fat}%`:''} ${e.note?`· ${e.note}`:''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="log-item-value">${e.weight} kg</div>
+            <button class="btn-danger" onclick="deleteWeight(${entries.length-1-i})">×</button>
+          </div>
+        </div>`).join('')}</div>` : ''}
+    </div>`;
+
+  if (entries.length >= 2) {
+    setTimeout(() => drawWeightChart(entries), 50);
+  }
+}
+
+function drawWeightChart(entries) {
+  const ctx = document.getElementById('weightChart');
+  if (!ctx) return;
+  if (weightChart) { weightChart.destroy(); weightChart = null; }
+  const last30 = entries.slice(-30);
+  weightChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: last30.map(e => e.date.slice(5)),
+      datasets: [{
+        data: last30.map(e => parseFloat(e.weight)),
+        borderColor: '#1A1A1A', backgroundColor: 'rgba(26,26,26,0.06)',
+        borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#1A1A1A',
+        tension: 0.3, fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#8A8A84' } },
+        y: { grid: { color: '#F0EFEC' }, ticks: { font: { size: 11 }, color: '#8A8A84' } }
+      }
+    }
+  });
+}
+
+function setWeightPerson(key) { currentTrackPerson = key; renderWeightTab(); }
+
+function addWeight() {
+  const date = document.getElementById('wDate').value;
+  const weight = document.getElementById('wKg').value;
+  const fat = document.getElementById('wFat').value;
+  const note = document.getElementById('wNote').value;
+  if (!date || !weight) { alert('Please enter a date and weight.'); return; }
+  const entries = getStore(`weight_${currentTrackPerson}`, []);
+  entries.push({ date, weight: parseFloat(weight), fat: fat ? parseFloat(fat) : null, note });
+  entries.sort((a,b) => a.date.localeCompare(b.date));
+  setStore(`weight_${currentTrackPerson}`, entries);
+  renderWeightTab();
+}
+
+function deleteWeight(idx) {
+  const entries = getStore(`weight_${currentTrackPerson}`, []);
+  entries.splice(idx, 1);
+  setStore(`weight_${currentTrackPerson}`, entries);
+  renderWeightTab();
+}
+
+// ═══════════════════════════════════════════════════════
+// WORKOUT TAB
+// ═══════════════════════════════════════════════════════
+const WORKOUT_TYPES = ['Walk','Run','Cycle','Gym','Yoga','Swim','HIIT','Pilates','Cricket','Badminton','Other'];
+let selectedWorkoutType = '';
+
+function renderWorkoutTab() {
+  const entries = getStore(`workout_${currentTrackPerson}`, []);
+  document.getElementById('trackContent').innerHTML = `
+    <div class="track-card">
+      <div class="track-card-header">
+        <div><div class="track-card-title">Workout Log</div><div class="track-card-subtitle">Track workouts for each family member</div></div>
+        <div style="text-align:right"><div style="font-family:'Instrument Serif',serif;font-size:24px">${entries.length}</div><div style="font-size:11px;color:#5C5C5C;text-transform:uppercase;letter-spacing:0.4px">Total Logged</div></div>
+      </div>
+      ${renderPersonStrip(currentTrackPerson, 'setWorkoutPerson')}
+      <div class="form-label" style="margin-bottom:8px">Workout Type</div>
+      <div class="workout-type-grid">${WORKOUT_TYPES.map(t =>
+        `<button class="workout-tag${selectedWorkoutType===t?' selected':''}" onclick="selectWorkoutType('${t}')">${t}</button>`
+      ).join('')}</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="woDate" value="${new Date().toISOString().split('T')[0]}"></div>
+        <div class="form-group"><label class="form-label">Duration (min)</label><input type="number" class="form-input" id="woDuration" placeholder="e.g. 45"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Intensity</label>
+          <select class="form-input" id="woIntensity">
+            <option value="">Select...</option>
+            <option>Easy</option><option>Moderate</option><option>Hard</option><option>Very Hard</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Calories Burned (optional)</label><input type="number" class="form-input" id="woCal" placeholder="e.g. 320"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Notes</label><textarea class="form-textarea" id="woNote" placeholder="e.g. Morning run in Cubbon Park, felt strong"></textarea></div>
+      <button class="btn-primary" onclick="addWorkout()">Log Workout</button>
+    </div>
+
+    <div class="track-card">
+      <div class="track-card-title" style="margin-bottom:16px">Recent Workouts – ${MEMBER_LABELS[currentTrackPerson]}</div>
+      ${entries.length ? `<div class="log-list">${[...entries].reverse().slice(0,10).map((e,i)=>`
+        <div class="log-item">
+          <div class="log-item-main">
+            <div class="log-item-title">${e.type} · ${e.duration} min ${e.intensity?`· ${e.intensity}`:''}</div>
+            <div class="log-item-meta">${formatDate(e.date)}${e.cal?` · ${e.cal} kcal`:''}${e.note?` · ${e.note}`:''}</div>
+          </div>
+          <button class="btn-danger" onclick="deleteWorkout(${entries.length-1-i})">×</button>
+        </div>`).join('')}</div>` :
+      `<div class="empty-state"><div class="empty-state-icon">🏃</div><div class="empty-state-text">No workouts logged yet. Log your first one above.</div></div>`}
+    </div>`;
+}
+
+function selectWorkoutType(type) { selectedWorkoutType = type; renderWorkoutTab(); }
+function setWorkoutPerson(key) { currentTrackPerson = key; renderWorkoutTab(); }
+
+function addWorkout() {
+  const type = selectedWorkoutType;
+  const date = document.getElementById('woDate').value;
+  const duration = document.getElementById('woDuration').value;
+  const intensity = document.getElementById('woIntensity').value;
+  const cal = document.getElementById('woCal').value;
+  const note = document.getElementById('woNote').value;
+  if (!type) { alert('Please select a workout type.'); return; }
+  if (!date || !duration) { alert('Please enter a date and duration.'); return; }
+  const entries = getStore(`workout_${currentTrackPerson}`, []);
+  entries.push({ date, type, duration: parseInt(duration), intensity, cal: cal ? parseInt(cal) : null, note });
+  entries.sort((a,b) => a.date.localeCompare(b.date));
+  setStore(`workout_${currentTrackPerson}`, entries);
+  selectedWorkoutType = '';
+  renderWorkoutTab();
+}
+
+function deleteWorkout(idx) {
+  const entries = getStore(`workout_${currentTrackPerson}`, []);
+  entries.splice(idx, 1);
+  setStore(`workout_${currentTrackPerson}`, entries);
+  renderWorkoutTab();
+}
+
+// ═══════════════════════════════════════════════════════
+// DIET TAB
+// ═══════════════════════════════════════════════════════
+function renderDietTab() {
+  const plans = getStore(`diet_${currentTrackPerson}`, []);
+  const today = new Date().toISOString().split('T')[0];
+
+  document.getElementById('trackContent').innerHTML = `
+    <div class="track-card">
+      <div class="track-card-header">
+        <div><div class="track-card-title">Diet Plan</div><div class="track-card-subtitle">Log daily meals and nutrition notes</div></div>
+      </div>
+      ${renderPersonStrip(currentTrackPerson, 'setDietPerson')}
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="dDate" value="${today}"></div>
+        <div class="form-group"><label class="form-label">Total Calories (optional)</label><input type="number" class="form-input" id="dCal" placeholder="e.g. 1800"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Breakfast</label><textarea class="form-textarea" id="dBreakfast" placeholder="e.g. Oats with banana, green tea"></textarea></div>
+        <div class="form-group"><label class="form-label">Lunch</label><textarea class="form-textarea" id="dLunch" placeholder="e.g. Dal, rice, sabzi, salad"></textarea></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Dinner</label><textarea class="form-textarea" id="dDinner" placeholder="e.g. Khichdi, curd, papad"></textarea></div>
+        <div class="form-group"><label class="form-label">Snacks</label><textarea class="form-textarea" id="dSnacks" placeholder="e.g. Fruits, nuts, chaas"></textarea></div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label">Notes / Goals</label><textarea class="form-textarea" id="dNotes" placeholder="e.g. Avoided sugar today, high protein day, cheat meal"></textarea></div>
+      <button class="btn-primary" onclick="saveDiet()">Save Diet Log</button>
+    </div>
+
+    <div class="track-card">
+      <div class="track-card-title" style="margin-bottom:16px">Recent Logs – ${MEMBER_LABELS[currentTrackPerson]}</div>
+      ${plans.length ? [...plans].reverse().slice(0,5).map((p,i)=>`
+        <div style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:600;font-size:14px">${formatDate(p.date)}${p.cal?` · ${p.cal} kcal`:''}</div>
+            <button class="btn-danger" onclick="deleteDiet(${plans.length-1-i})">Delete</button>
+          </div>
+          <div class="meal-grid">
+            ${p.breakfast?`<div class="meal-box"><div class="meal-box-label">Breakfast</div><div class="meal-box-content">${p.breakfast}</div></div>`:''}
+            ${p.lunch?`<div class="meal-box"><div class="meal-box-label">Lunch</div><div class="meal-box-content">${p.lunch}</div></div>`:''}
+            ${p.dinner?`<div class="meal-box"><div class="meal-box-label">Dinner</div><div class="meal-box-content">${p.dinner}</div></div>`:''}
+            ${p.snacks?`<div class="meal-box"><div class="meal-box-label">Snacks</div><div class="meal-box-content">${p.snacks}</div></div>`:''}
+          </div>
+          ${p.notes?`<div style="font-size:12px;color:#5C5C5C;margin-top:8px;font-style:italic">${p.notes}</div>`:''}
+          ${i < Math.min(plans.length,5)-1 ? '<hr class="divider">' : ''}
+        </div>`).join('') :
+      `<div class="empty-state"><div class="empty-state-icon">🥗</div><div class="empty-state-text">No diet logs yet. Add your first one above.</div></div>`}
+    </div>`;
+}
+
+function setDietPerson(key) { currentTrackPerson = key; renderDietTab(); }
+
+function saveDiet() {
+  const date = document.getElementById('dDate').value;
+  if (!date) { alert('Please select a date.'); return; }
+  const plan = {
+    date,
+    cal: document.getElementById('dCal').value || null,
+    breakfast: document.getElementById('dBreakfast').value,
+    lunch: document.getElementById('dLunch').value,
+    dinner: document.getElementById('dDinner').value,
+    snacks: document.getElementById('dSnacks').value,
+    notes: document.getElementById('dNotes').value,
+  };
+  const plans = getStore(`diet_${currentTrackPerson}`, []);
+  const existing = plans.findIndex(p => p.date === date);
+  if (existing >= 0) plans[existing] = plan; else plans.push(plan);
+  plans.sort((a,b) => a.date.localeCompare(b.date));
+  setStore(`diet_${currentTrackPerson}`, plans);
+  renderDietTab();
+}
+
+function deleteDiet(idx) {
+  const plans = getStore(`diet_${currentTrackPerson}`, []);
+  plans.splice(idx, 1);
+  setStore(`diet_${currentTrackPerson}`, plans);
+  renderDietTab();
+}
+
+// ═══════════════════════════════════════════════════════
+// SAMSUNG HEALTH TAB – see Part 2 for full implementation
+// ═══════════════════════════════════════════════════════
+function renderSamsungTab() {
+  document.getElementById('trackContent').innerHTML = `<div id="samsungTabContent"></div>`;
+  renderSamsungContent();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SAMSUNG HEALTH – GOOGLE SHEETS SYNC
+// ═══════════════════════════════════════════════════════
+
+let samsungCharts = {};
+let samsungPerson = 'tejas';
+
+// Sheet URL stored per person
+function getSheetUrl(person) {
+  return localStorage.getItem(`samsung_sheet_${person}`) || '';
+}
+function setSheetUrl(person, url) {
+  localStorage.setItem(`samsung_sheet_${person}`, url);
+}
+
+// Cached data stored per person
+function getSamsungData(person) {
+  try { return JSON.parse(localStorage.getItem(`samsung_data_${person}`)) || null; } catch { return null; }
+}
+function setSamsungData(person, data) {
+  localStorage.setItem(`samsung_data_${person}`, JSON.stringify(data));
+  localStorage.setItem(`samsung_last_sync_${person}`, new Date().toISOString());
+}
+function getLastSync(person) {
+  return localStorage.getItem(`samsung_last_sync_${person}`) || null;
+}
+
+function renderSamsungContent() {
+  const sheetUrl = getSheetUrl(samsungPerson);
+  const cachedData = getSamsungData(samsungPerson);
+  const lastSync = getLastSync(samsungPerson);
+
+  const lastSyncStr = lastSync
+    ? `Last synced: ${new Date(lastSync).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`
+    : 'Not yet synced';
+
+  let html = `
+    <!-- PERSON STRIP -->
+    ${renderPersonStrip(samsungPerson, 'setSamsungPerson')}
+
+    <!-- SETUP GUIDE -->
+    <div class="setup-guide">
+      <div class="setup-guide-title">⚙️ One-Time Setup – Samsung Health → Google Sheets Auto-Sync</div>
+      <p style="font-size:13px;color:#5C5C5C;margin-bottom:14px">Complete these steps once. After setup, the dashboard reads your Samsung Health data automatically every time you open it.</p>
+
+      <div class="setup-step">
+        <div class="setup-step-num">1</div>
+        <div class="setup-step-text"><strong>Enable Google Fit sync on your Samsung phone</strong><br>
+        Open Samsung Health → Profile → Connected Services → Google Fit → Turn ON. Steps, heart rate, and stress will now sync to Google Fit automatically.</div>
+      </div>
+
+      <div class="setup-step">
+        <div class="setup-step-num">2</div>
+        <div class="setup-step-text"><strong>Create a new Google Sheet</strong><br>
+        Go to <a href="https://sheets.google.com" target="_blank" style="color:#2B6CB0">sheets.google.com</a> → New spreadsheet → Name it "Lodaya Health Sync". Create 4 sheets (tabs) named exactly: <strong>Tejas, Megh, Geeta, Paresh</strong>. Add this header row to each sheet tab:<br>
+        <code style="background:#F5F5F2;padding:2px 6px;border-radius:4px;font-size:12px">Date | Steps | HeartRateAvg | HeartRateMin | HeartRateMax | StressScore | ActiveMinutes | CaloriesBurned | SleepHours</code></div>
+      </div>
+
+      <div class="setup-step">
+        <div class="setup-step-num">3</div>
+        <div class="setup-step-text"><strong>Add the Apps Script (copy exactly)</strong><br>
+        In your Google Sheet: Extensions → Apps Script → delete everything → paste this code → Save → Run once to authorize:</div>
+      </div>
+
+      <div class="code-block">// Lodaya Health Auto-Sync – Google Fit → Google Sheets
+// Paste this in Extensions > Apps Script and run once to authorize
+
+const SHEET_NAME_MAP = {
+  'tejas': 'Tejas',
+  'megh': 'Megh',
+  'geeta': 'Geeta',
+  'paresh': 'Paresh'
+};
+
+// Map Gmail to sheet tab name
+const EMAIL_TO_MEMBER = {
+  'tejaslodaya@gmail.com': 'Tejas',     // replace with real emails
+  'megh@gmail.com': 'Megh',
+  'geeta@gmail.com': 'Geeta',
+  'paresh@gmail.com': 'Paresh'
+};
+
+function syncAllMembers() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const today = new Date();
+  const startTime = new Date(today);
+  startTime.setDate(today.getDate() - 1);
+  startTime.setHours(0,0,0,0);
+  const endTime = new Date(today);
+  endTime.setHours(23,59,59,999);
+
+  // Sync for active user (whoever runs this script)
+  const activeEmail = Session.getActiveUser().getEmail();
+  const memberName = EMAIL_TO_MEMBER[activeEmail] || 'Tejas';
+  syncForMember(ss, memberName, startTime, endTime);
+}
+
+function syncForMember(ss, memberName, startTime, endTime) {
+  const sheet = ss.getSheetByName(memberName);
+  if (!sheet) return;
+
+  const fitnessService = GoogleFitApp.getService();
+  const dateStr = Utilities.formatDate(startTime, 'Asia/Kolkata', 'yyyy-MM-dd');
+
+  // Fetch steps
+  let steps = 0, hrAvg = 0, hrMin = 0, hrMax = 0;
+  let stress = 0, activeMin = 0, calories = 0, sleep = 0;
+
+  try {
+    const stepsData = fitnessService.getDailySteps(startTime, endTime);
+    if (stepsData && stepsData.length) steps = stepsData[0].value || 0;
+  } catch(e) {}
+
+  try {
+    const hrData = fitnessService.getHeartRateSummary(startTime, endTime);
+    if (hrData) { hrAvg = Math.round(hrData.average||0); hrMin = hrData.min||0; hrMax = hrData.max||0; }
+  } catch(e) {}
+
+  try {
+    const calData = fitnessService.getDailyCalories(startTime, endTime);
+    if (calData && calData.length) calories = Math.round(calData[0].value || 0);
+  } catch(e) {}
+
+  try {
+    const sleepData = fitnessService.getSleepSessions(startTime, endTime);
+    if (sleepData && sleepData.length) sleep = Math.round(sleepData[0].duration / 3600000 * 10) / 10;
+  } catch(e) {}
+
+  // Check if date already exists
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const lastDate = sheet.getRange(lastRow, 1).getValue();
+    if (Utilities.formatDate(new Date(lastDate), 'Asia/Kolkata', 'yyyy-MM-dd') === dateStr) {
+      sheet.getRange(lastRow, 1, 1, 9).setValues([[dateStr, steps, hrAvg, hrMin, hrMax, stress, activeMin, calories, sleep]]);
+      return;
+    }
+  }
+  sheet.appendRow([dateStr, steps, hrAvg, hrMin, hrMax, stress, activeMin, calories, sleep]);
+}
+
+// Run this once to set up hourly auto-trigger
+function createHourlyTrigger() {
+  ScriptApp.newTrigger('syncAllMembers')
+    .timeBased().everyHours(1).create();
+  Logger.log('Hourly trigger created. Sync will run automatically.');
+}</div>
+
+      <div class="setup-step">
+        <div class="setup-step-num">4</div>
+        <div class="setup-step-text"><strong>Run createHourlyTrigger()</strong> in Apps Script once → this sets up automatic hourly sync. You never need to touch it again.</div>
+      </div>
+
+      <div class="setup-step">
+        <div class="setup-step-num">5</div>
+        <div class="setup-step-text"><strong>Publish the sheet as a web CSV</strong><br>
+        In Google Sheets: File → Share → Publish to web → choose the sheet tab for each person → CSV → Publish. Copy the URL and paste it below for each family member.</div>
+      </div>
+
+      <button onclick="toggleGuide()" style="background:none;border:none;cursor:pointer;font-size:12px;color:#5C5C5C;margin-top:4px">Hide setup guide ↑</button>
+    </div>
+
+    <!-- SHEET URL INPUT -->
+    <div class="track-card">
+      <div class="track-card-header">
+        <div>
+          <div class="track-card-title">Connect Sheet – ${MEMBER_LABELS[samsungPerson]}</div>
+          <div class="track-card-subtitle">${lastSyncStr}</div>
+        </div>
+        <button class="btn-primary" onclick="fetchSamsungData()" id="syncBtn">↻ Sync Now</button>
+      </div>
+      <div class="sheet-input-row">
+        <input type="url" class="form-input" id="sheetUrlInput" placeholder="Paste your published Google Sheet CSV URL here…" value="${sheetUrl}">
+        <button class="btn-secondary" onclick="saveSheetUrl()">Save URL</button>
+      </div>
+      <p style="font-size:12px;color:#8A8A84;margin-top:8px">The URL looks like: <code style="background:#F5F5F2;padding:1px 5px;border-radius:4px">https://docs.google.com/spreadsheets/d/.../pub?gid=0&single=true&output=csv</code></p>
+    </div>`;
+
+  // DATA DISPLAY
+  if (cachedData && cachedData.rows && cachedData.rows.length > 0) {
+    const rows = cachedData.rows;
+    const latest = rows[rows.length - 1];
+    const prev = rows.length > 1 ? rows[rows.length - 2] : null;
+
+    // Today's stats
+    html += `
+    <div class="stat-grid">
+      <div class="stat-box blue">
+        <div class="stat-value blue">${fmtNum(latest.steps)}</div>
+        <div class="stat-label">Steps Today</div>
+        ${prev ? `<div style="font-size:11px;color:#5C5C5C;margin-top:4px">${delta(latest.steps, prev.steps, false)} vs yesterday</div>` : ''}
+      </div>
+      <div class="stat-box pink">
+        <div class="stat-value pink">${latest.hrAvg || '–'}</div>
+        <div class="stat-label">Avg Heart Rate</div>
+        <div style="font-size:11px;color:#5C5C5C;margin-top:4px">${latest.hrMin && latest.hrMax ? `${latest.hrMin}–${latest.hrMax} bpm range` : 'bpm'}</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-value purple">${latest.stress || '–'}</div>
+        <div class="stat-label">Stress Score</div>
+        <div style="font-size:11px;color:#5C5C5C;margin-top:4px">${stressLabel(latest.stress)}</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-value green">${latest.calories || '–'}</div>
+        <div class="stat-label">Calories Burned</div>
+        <div style="font-size:11px;color:#5C5C5C;margin-top:4px">kcal</div>
+      </div>
+      <div class="stat-box blue" style="background:#F0FAF3;border-color:#C2E5CE">
+        <div class="stat-value" style="color:#2D8A4E">${latest.sleep || '–'}</div>
+        <div class="stat-label">Sleep Hours</div>
+        <div style="font-size:11px;color:#5C5C5C;margin-top:4px">last night</div>
+      </div>
+      <div class="stat-box blue" style="background:#FFF7EC;border-color:#F5DDB0">
+        <div class="stat-value" style="color:#D97B1A">${latest.activeMin || '–'}</div>
+        <div class="stat-label">Active Minutes</div>
+        <div style="font-size:11px;color:#5C5C5C;margin-top:4px">Goal: 30 min</div>
+      </div>
+    </div>`;
+
+    // Charts
+    if (rows.length >= 3) {
+      html += `
+      <div class="track-card">
+        <div class="track-card-title" style="margin-bottom:16px">7-Day Trends – ${MEMBER_LABELS[samsungPerson]}</div>
+        <div style="margin-bottom:24px">
+          <div style="font-size:13px;font-weight:600;color:#5C5C5C;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px">Step Count</div>
+          <div class="chart-wrap"><canvas id="stepsChart"></canvas></div>
+        </div>
+        <div style="margin-bottom:24px">
+          <div style="font-size:13px;font-weight:600;color:#5C5C5C;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px">Heart Rate (avg bpm)</div>
+          <div class="chart-wrap"><canvas id="hrChart"></canvas></div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#5C5C5C;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px">Stress Score</div>
+          <div class="chart-wrap"><canvas id="stressChart"></canvas></div>
+        </div>
+      </div>`;
+    }
+
+    // History table
+    html += `
+    <div class="track-card">
+      <div class="track-card-title" style="margin-bottom:12px">Data History</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Steps</th><th>HR Avg</th><th>HR Range</th><th>Stress</th><th>Sleep</th><th>Calories</th></tr></thead>
+        <tbody>${[...rows].reverse().slice(0,14).map(r => `<tr>
+          <td>${formatDate(r.date)}</td>
+          <td style="text-align:center;font-weight:600;color:${r.steps >= 8000 ? '#2D8A4E' : r.steps >= 5000 ? '#D97B1A' : '#D94F3B'}">${fmtNum(r.steps)}</td>
+          <td style="text-align:center;font-weight:500">${r.hrAvg || '–'}</td>
+          <td style="text-align:center;font-size:12px;color:#5C5C5C">${r.hrMin && r.hrMax ? `${r.hrMin}–${r.hrMax}` : '–'}</td>
+          <td style="text-align:center;font-weight:500;color:${stressColor(r.stress)}">${r.stress || '–'}</td>
+          <td style="text-align:center;font-weight:500">${r.sleep ? r.sleep + 'h' : '–'}</td>
+          <td style="text-align:center;font-weight:500">${r.calories || '–'}</td>
+        </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+
+  } else {
+    html += `
+    <div class="track-card">
+      <div class="empty-state">
+        <div class="empty-state-icon">⌚</div>
+        <div class="empty-state-text" style="max-width:360px;margin:0 auto">
+          Complete the setup above, paste your Google Sheet CSV URL, then click <strong>Sync Now</strong>.<br><br>
+          After setup, data syncs automatically every hour via Apps Script.
+        </div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('samsungTabContent').innerHTML = html;
+
+  // Draw charts after render
+  if (cachedData && cachedData.rows && cachedData.rows.length >= 3) {
+    setTimeout(() => drawSamsungCharts(cachedData.rows), 80);
+  }
+}
+
+function toggleGuide() {
+  const guide = document.querySelector('.setup-guide');
+  if (guide) guide.style.display = guide.style.display === 'none' ? '' : 'none';
+}
+
+function setSamsungPerson(key) {
+  samsungPerson = key;
+  renderSamsungContent();
+}
+
+function saveSheetUrl() {
+  const url = document.getElementById('sheetUrlInput').value.trim();
+  if (!url) { alert('Please paste a URL first.'); return; }
+  setSheetUrl(samsungPerson, url);
+  alert('URL saved. Click "Sync Now" to fetch data.');
+}
+
+async function fetchSamsungData() {
+  const url = getSheetUrl(samsungPerson);
+  if (!url) { alert('Please save your Google Sheet CSV URL first.'); return; }
+
+  const btn = document.getElementById('syncBtn');
+  if (btn) { btn.textContent = '⏳ Syncing…'; btn.disabled = true; }
+
+  try {
+    // Use a CORS proxy since CSV is cross-origin
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error('Network error');
+    const json = await res.json();
+    const csv = json.contents;
+    if (!csv) throw new Error('Empty response');
+
+    const rows = parseCSV(csv);
+    setSamsungData(samsungPerson, { rows });
+    renderSamsungContent();
+  } catch (err) {
+    if (btn) { btn.textContent = '↻ Sync Now'; btn.disabled = false; }
+    alert('Could not fetch data. Make sure:\n1. The Sheet is published as CSV (File → Share → Publish to web)\n2. The URL is correct\n3. You have internet access\n\nError: ' + err.message);
+  }
+}
+
+function parseCSV(csv) {
+  const lines = csv.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  // Skip header row
+  return lines.slice(1).map(line => {
+    const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+    return {
+      date: cols[0] || '',
+      steps: parseInt(cols[1]) || 0,
+      hrAvg: parseInt(cols[2]) || 0,
+      hrMin: parseInt(cols[3]) || 0,
+      hrMax: parseInt(cols[4]) || 0,
+      stress: parseInt(cols[5]) || 0,
+      activeMin: parseInt(cols[6]) || 0,
+      calories: parseInt(cols[7]) || 0,
+      sleep: parseFloat(cols[8]) || 0,
+    };
+  }).filter(r => r.date);
+}
+
+function drawSamsungCharts(rows) {
+  // Destroy old
+  ['stepsChart','hrChart','stressChart'].forEach(id => {
+    if (samsungCharts[id]) { samsungCharts[id].destroy(); delete samsungCharts[id]; }
+  });
+
+  const last14 = rows.slice(-14);
+  const labels = last14.map(r => r.date.slice(5));
+
+  const stepCtx = document.getElementById('stepsChart');
+  if (stepCtx) {
+    samsungCharts['stepsChart'] = new Chart(stepCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: last14.map(r => r.steps),
+          backgroundColor: last14.map(r => r.steps >= 8000 ? '#2D8A4E' : r.steps >= 5000 ? '#D97B1A' : '#D94F3B'),
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#8A8A84' } },
+          y: { grid: { color: '#F0EFEC' }, ticks: { font: { size: 10 }, color: '#8A8A84' } }
+        }
+      }
+    });
+  }
+
+  const hrCtx = document.getElementById('hrChart');
+  if (hrCtx) {
+    samsungCharts['hrChart'] = new Chart(hrCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Max', data: last14.map(r => r.hrMax || null), borderColor: '#F5D0CA', borderWidth: 1, pointRadius: 0, tension: 0.4, fill: false },
+          { label: 'Avg', data: last14.map(r => r.hrAvg || null), borderColor: '#B0406B', backgroundColor: 'rgba(176,64,107,0.08)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#B0406B', tension: 0.4, fill: true },
+          { label: 'Min', data: last14.map(r => r.hrMin || null), borderColor: '#F5D0CA', borderWidth: 1, pointRadius: 0, tension: 0.4, fill: false },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { font: { size: 11 }, boxWidth: 12 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#8A8A84' } },
+          y: { grid: { color: '#F0EFEC' }, ticks: { font: { size: 10 }, color: '#8A8A84' } }
+        }
+      }
+    });
+  }
+
+  const stressCtx = document.getElementById('stressChart');
+  if (stressCtx) {
+    samsungCharts['stressChart'] = new Chart(stressCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: last14.map(r => r.stress || null),
+          borderColor: '#6B46C1', backgroundColor: 'rgba(107,70,193,0.07)',
+          borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#6B46C1',
+          tension: 0.4, fill: true,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#8A8A84' } },
+          y: { min: 0, max: 100, grid: { color: '#F0EFEC' }, ticks: { font: { size: 10 }, color: '#8A8A84' } }
+        }
+      }
+    });
+  }
+}
+
+// ─── helpers ───
+function fmtNum(n) { return n ? n.toLocaleString('en-IN') : '0'; }
+
+function delta(curr, prev, lowerBetter) {
+  if (!prev || !curr) return '';
+  const diff = curr - prev;
+  if (diff === 0) return '±0';
+  const sign = diff > 0 ? '+' : '';
+  const color = (diff > 0) === !lowerBetter ? '#2D8A4E' : '#D94F3B';
+  return `<span style="color:${color}">${sign}${fmtNum(Math.abs(diff))}</span>`;
+}
+
+function stressLabel(score) {
+  if (!score) return '';
+  if (score < 25) return '😌 Low';
+  if (score < 50) return '🙂 Moderate';
+  if (score < 75) return '😤 High';
+  return '😰 Very High';
+}
+
+function stressColor(score) {
+  if (!score) return '#5C5C5C';
+  if (score < 25) return '#2D8A4E';
+  if (score < 50) return '#D97B1A';
+  return '#D94F3B';
+}
+</script>
+</body>
+</html>
