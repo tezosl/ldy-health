@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e0e0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lodaya Health">
+<meta name="description" content="Lodaya Family Health – Weight, Smoking, Appointments">
+<title>Lodaya · Health</title>
+
+<script>
+// ── Inline PWA Manifest ──────────────────────────────
+const manifestData = {
+  name: "Lodaya Family Health",
+  short_name: "Lodaya Health",
+  description: "Weight · Smoking · Appointments · Water",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0e0e0f",
+  theme_color: "#0e0e0f",
+  orientation: "portrait",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230e0e0f'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='100' font-family='serif'%3E🏥%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230e0e0f'/%3E%3Ctext x='256' y='340' text-anchor='middle' font-size='280' font-family='serif'%3E🏥%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+const mLink = document.createElement('link');
+mLink.rel = 'manifest';
+mLink.href = URL.createObjectURL(manifestBlob);
+document.head.appendChild(mLink);
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<style>
+:root {
+  --bg:       #0e0e0f;
+  --bg2:      #161618;
+  --bg3:      #1e1e21;
+  --bg4:      #252528;
+  --border:   #2e2e32;
+  --text:     #f0ede8;
+  --text2:    #9e9b96;
+  --text3:    #5c5a56;
+  --accent:   #c8ff3e;
+  --accent-d: rgba(200,255,62,0.12);
+  --red:      #ff5c5c;
+  --red-d:    rgba(255,92,92,0.12);
+  --orange:   #ffb347;
+  --orange-d: rgba(255,179,71,0.12);
+  --green:    #5cff8f;
+  --green-d:  rgba(92,255,143,0.10);
+  --blue:     #5ca8ff;
+  --blue-d:   rgba(92,168,255,0.12);
+  --purple:   #c084fc;
+  --purple-d: rgba(192,132,252,0.12);
+  --smoke:    #ff7c5c;
+  --smoke-d:  rgba(255,124,92,0.12);
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overscroll-behavior: none; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* ── Layout ── */
+.app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 480px; margin: 0 auto; }
+.content { flex: 1; overflow-y: auto; padding: 16px 16px calc(var(--safe-bottom) + 96px); }
+
+/* ── Topbar ── */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(14,14,15,0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: calc(var(--safe-top) + 12px) 16px 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.topbar-left h1 { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 500; letter-spacing: -0.3px; }
+.topbar-left p { font-size: 11px; color: var(--text3); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.icon-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 16px; cursor: pointer; color: var(--text2); transition: all 0.15s; }
+.icon-btn:active { transform: scale(0.93); }
+.notif-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; position: absolute; top: -2px; right: -2px; }
+.icon-btn-wrap { position: relative; }
+
+/* ── Person Pill Rail ── */
+.person-rail { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 20px; }
+.person-pill { flex-shrink: 0; padding: 7px 18px; border-radius: 24px; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.18s; font-family: 'Outfit', sans-serif; }
+.person-pill.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+.person-pill:active { transform: scale(0.94); }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: rgba(14,14,15,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 0 calc(var(--safe-bottom) + 8px);
+  z-index: 50;
+}
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 5px 0; transition: opacity 0.15s; }
+.nav-item:active { opacity: 0.55; }
+.nav-icon { font-size: 20px; line-height: 1; transition: filter 0.2s; }
+.nav-label { font-size: 9px; color: var(--text3); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; transition: color 0.15s; }
+.nav-item.active .nav-label { color: var(--accent); }
+.nav-item.active .nav-icon { filter: drop-shadow(0 0 6px rgba(200,255,62,0.5)); }
+
+/* ── Pages ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Cards ── */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 18px 20px; margin-bottom: 14px; position: relative; overflow: hidden; }
+.card-glow::before { content: ''; position: absolute; top: -50px; right: -50px; width: 130px; height: 130px; border-radius: 50%; background: var(--accent-d); pointer-events: none; }
+.card-title { font-family: 'Playfair Display', serif; font-size: 17px; margin-bottom: 2px; }
+.card-sub { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+.section-head { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; margin-top: 4px; }
+
+/* ── Forms ── */
+.field-group { margin-bottom: 14px; }
+.field-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 7px; display: block; }
+.field-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; font-size: 15px; color: var(--text); font-family: 'Outfit', sans-serif; outline: none; transition: border 0.15s; -webkit-appearance: none; }
+.field-input:focus { border-color: var(--accent); }
+.field-input::placeholder { color: var(--text3); }
+select.field-input { cursor: pointer; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+
+/* ── Buttons ── */
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Outfit', sans-serif; border: none; transition: all 0.18s; letter-spacing: 0.1px; }
+.btn:active { transform: scale(0.97); opacity: 0.88; }
+.btn-accent { background: var(--accent); color: var(--bg); }
+.btn-ghost { background: var(--bg3); color: var(--text); border: 1px solid var(--border); font-weight: 500; }
+.btn-red { background: var(--red-d); color: var(--red); border: 1px solid rgba(255,92,92,0.25); font-weight: 500; font-size: 14px; }
+.btn-smoke { background: var(--smoke-d); color: var(--smoke); border: 1px solid rgba(255,124,92,0.25); }
+.btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 10px; }
+
+/* ── Stat Big ── */
+.stat-big { font-family: 'Playfair Display', serif; font-size: 52px; font-weight: 600; line-height: 1; }
+.stat-unit { font-size: 18px; color: var(--text2); font-weight: 300; margin-left: 4px; }
+
+/* ── Stat Mini Grid ── */
+.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-mini { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 14px 10px; text-align: center; }
+.stat-mini-val { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+.stat-mini-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; }
+
+/* ── Delta badge ── */
+.delta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin-top: 6px; }
+.delta.down { background: var(--green-d); color: var(--green); }
+.delta.up   { background: var(--red-d);   color: var(--red);   }
+.delta.same { background: var(--bg3);     color: var(--text3); }
+
+/* ── Progress bar ── */
+.prog-wrap { margin-top: 14px; }
+.prog-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+.prog-bg { height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 3px; transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* ── Streak ring ── */
+.streak-ring { width: 110px; height: 110px; flex-shrink: 0; }
+.streak-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.streak-bg-circle { fill: none; stroke: var(--bg4); stroke-width: 8; }
+.streak-fill-circle { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+.streak-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.streak-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 600; line-height: 1; }
+.streak-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Smoke FAB ── */
+.smoke-fab {
+  width: 100%; padding: 22px;
+  background: linear-gradient(135deg, var(--smoke-d), rgba(255,124,92,0.06));
+  border: 2px solid rgba(255,124,92,0.3);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  gap: 6px; cursor: pointer; transition: all 0.2s;
+  font-family: 'Outfit', sans-serif;
+  margin-bottom: 14px;
+}
+.smoke-fab:active { transform: scale(0.97); border-color: var(--smoke); background: var(--smoke-d); }
+.smoke-fab-icon { font-size: 36px; }
+.smoke-fab-label { font-size: 14px; font-weight: 600; color: var(--smoke); }
+.smoke-fab-sub { font-size: 11px; color: var(--text3); }
+
+/* ── List Items ── */
+.list-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 13px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+.list-item:last-child { border-bottom: none; }
+.list-item:active { background: var(--bg3); margin: 0 -20px; padding: 13px 20px; }
+.list-item-main { flex: 1; min-width: 0; }
+.list-item-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-item-meta { font-size: 11px; color: var(--text3); margin-top: 3px; line-height: 1.4; }
+.list-item-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* ── Appointment urgency pills ── */
+.appt-pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+.appt-pill.today   { background: var(--red-d);    color: var(--red);    }
+.appt-pill.soon    { background: var(--orange-d);  color: var(--orange); }
+.appt-pill.upcoming{ background: var(--blue-d);    color: var(--blue);   }
+.appt-pill.past    { background: var(--bg3);       color: var(--text3);  }
+
+/* ── Water tracker ── */
+.water-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin: 12px 0; }
+.water-drop { font-size: 22px; cursor: pointer; text-align: center; transition: all 0.2s; filter: grayscale(1) opacity(0.3); border: none; background: none; padding: 2px; border-radius: 6px; }
+.water-drop.filled { filter: none; }
+.water-drop:active { transform: scale(1.3); }
+
+/* ── Notification settings ── */
+.notif-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.notif-row:last-child { border-bottom: none; }
+.notif-info-title { font-size: 14px; font-weight: 500; }
+.notif-info-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.toggle { width: 46px; height: 26px; background: var(--bg4); border-radius: 13px; position: relative; cursor: pointer; transition: background 0.2s; border: none; flex-shrink: 0; }
+.toggle.on { background: var(--accent); }
+.toggle::after { content: ''; position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.toggle.on::after { transform: translateX(20px); }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.22s; backdrop-filter: blur(5px); }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-sheet { background: var(--bg2); border-radius: 24px 24px 0 0; padding: 0 20px calc(var(--safe-bottom) + 24px); width: 100%; max-width: 480px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1); max-height: 88dvh; overflow-y: auto; }
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 20px; }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: var(--text3); margin-bottom: 22px; }
+
+/* ── Weight stepper ── */
+.stepper { display: flex; align-items: center; background: var(--bg3); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.stepper-btn { width: 52px; height: 56px; background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stepper-btn:active { background: var(--accent-d); }
+.stepper-val { flex: 1; text-align: center; font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 600; color: var(--text); border: none; background: none; outline: none; -webkit-appearance: none; padding: 0; }
+.stepper-val::-webkit-inner-spin-button, .stepper-val::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* ── Chart ── */
+.chart-wrap { position: relative; height: 180px; margin-top: 8px; }
+.chart-wrap.tall { height: 220px; }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: calc(var(--safe-bottom) + 88px); left: 50%; transform: translateX(-50%) translateY(16px); background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 11px 20px; border-radius: 24px; font-size: 14px; font-weight: 500; z-index: 200; opacity: 0; transition: all 0.28s; white-space: nowrap; pointer-events: none; max-width: 90vw; text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Offline ── */
+.offline-bar { display: none; background: var(--orange-d); color: var(--orange); font-size: 12px; font-weight: 600; padding: 6px 16px; text-align: center; border-bottom: 1px solid rgba(255,179,71,0.2); }
+.offline-bar.visible { display: block; }
+
+/* ── Mood ── */
+.mood-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.mood-btn { padding: 7px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); font-size: 12px; cursor: pointer; font-family: 'Outfit', sans-serif; transition: all 0.15s; }
+.mood-btn.selected { background: var(--accent-d); color: var(--accent); border-color: rgba(200,255,62,0.35); }
+.mood-btn:active { transform: scale(0.93); }
+
+/* ── Empty ── */
+.empty { text-align: center; padding: 48px 20px; color: var(--text3); }
+.empty-icon { font-size: 38px; margin-bottom: 10px; }
+.empty-text { font-size: 14px; line-height: 1.6; }
+
+/* ── ICS badge ── */
+.ics-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--blue-d); color: var(--blue); border: 1px solid rgba(92,168,255,0.25); padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Outfit', sans-serif; text-decoration: none; transition: all 0.15s; }
+.ics-btn:active { transform: scale(0.95); }
+
+/* ── Server setup card ── */
+.setup-card { background: var(--bg2); border: 1px solid rgba(200,255,62,0.2); border-radius: 20px; padding: 18px 20px; margin-bottom: 14px; }
+.setup-card-title { font-size: 14px; font-weight: 600; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.setup-step { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+.setup-num { width: 20px; height: 20px; border-radius: 50%; background: rgba(200,255,62,0.15); color: var(--accent); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.setup-text { font-size: 12px; color: var(--text2); line-height: 1.5; flex: 1; }
+.setup-text strong { color: var(--text); }
+.code { background: var(--bg); color: var(--accent); font-family: 'Courier New', monospace; font-size: 11px; padding: 10px 12px; border-radius: 10px; margin: 6px 0; overflow-x: auto; white-space: pre; line-height: 1.5; border: 1px solid var(--border); display: block; }
+.server-url-row { display: flex; gap: 8px; margin-top: 10px; }
+.server-url-row .field-input { flex: 1; padding: 10px 12px; font-size: 13px; }
+
+/* ── Score page extras ── */
+details summary::-webkit-details-marker { display:none; }
+details[open] summary span:first-child { transform: rotate(90deg); display:inline-block; }
+.badge-locked { filter: grayscale(1) opacity(0.35); }
+@keyframes coinPop { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+.coin-pop { animation: coinPop 0.4s ease; }
+
+.anim { animation: slideUp 0.3s ease forwards; }
+@keyframes smokePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,124,92,0.4); } 50% { box-shadow: 0 0 0 12px rgba(255,124,92,0); } }
+.smoke-pulse { animation: smokePulse 2s infinite; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+<!-- OFFLINE -->
+<div class="offline-bar" id="offlineBar">⚡ Offline – all data saved locally</div>
+
+<!-- ── MODALS ───────────────────────────────────────── -->
+
+<!-- Weight modal -->
+<div class="modal-overlay" id="wModal" onclick="if(event.target===this)closeModal('wModal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="wModalTitle">Log Weight</div>
+    <div class="modal-sub" id="wModalSub">This week</div>
+    <div class="field-group">
+      <label class="field-label">Weight (kg)</label>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjW(-0.5)">−</button>
+        <input type="number" class="stepper-val" id="wKg" step="0.1" min="20" max="250" value="70.0">
+        <button class="stepper-btn" onclick="adjW(0.5)">+</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group" style="margin-bottom:0">
+        <label class="field-label">Body Fat % (opt.)</label>
+        <input type="number" class="field-input" id="wFat" step="0.1" min="1" max="70" placeholder="22.0">
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <label class="field-label">Notes (opt.)</label>
+        <input type="text" class="field-input" id="wNote" placeholder="Morning, after walk…">
+      </div>
+    </div>
+    <div class="field-group" style="margin-top:14px">
+      <label class="field-label">How do you feel?</label>
+      <div class="mood-row" id="wMoodRow">
+        <button class="mood-btn" data-mood="💪 Strong" onclick="pickMood(this,'wMoodRow')">💪 Strong</button>
+        <button class="mood-btn" data-mood="😊 Good"   onclick="pickMood(this,'wMoodRow')">😊 Good</button>
+        <button class="mood-btn" data-mood="😐 Okay"   onclick="pickMood(this,'wMoodRow')">😐 Okay</button>
+        <button class="mood-btn" data-mood="😓 Tired"  onclick="pickMood(this,'wMoodRow')">😓 Tired</button>
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="submitWeight()">Save Weight</button>
+    <button class="btn btn-red" id="wDeleteBtn" style="margin-top:10px;display:none" onclick="deleteWeight()">Delete Entry</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Appointment modal -->
+<div class="modal-overlay" id="apptModal" onclick="if(event.target===this)closeModal('apptModal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="apptModalTitle">New Appointment</div>
+    <div class="modal-sub">Fill in the details below</div>
+    <div class="field-group">
+      <label class="field-label">Doctor / Specialist</label>
+      <input type="text" class="field-input" id="apptDoctor" placeholder="e.g. Dr Sharma – Endocrinologist">
+    </div>
+    <div class="field-group">
+      <label class="field-label">For (family member)</label>
+      <select class="field-input" id="apptPerson">
+        <option value="geeta">Geeta</option>
+        <option value="paresh">Paresh</option>
+        <option value="megh">Megh</option>
+        <option value="tejas">Tejas</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field-group" style="margin-bottom:0">
+        <label class="field-label">Date</label>
+        <input type="date" class="field-input" id="apptDate">
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <label class="field-label">Time</label>
+        <input type="time" class="field-input" id="apptTime">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Hospital / Clinic</label>
+      <input type="text" class="field-input" id="apptLocation" placeholder="e.g. Manipal Hospital, Whitefield">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Notes / Reason</label>
+      <input type="text" class="field-input" id="apptNotes" placeholder="e.g. Thyroid follow-up, bring last reports">
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:6px">
+      <button class="btn btn-accent" style="flex:1" onclick="saveAppt()">Save Appointment</button>
+      <a class="btn btn-ghost btn-sm" id="apptIcsBtn" style="flex:0 0 auto;width:auto;padding:0 18px;text-decoration:none;display:flex;align-items:center" onclick="downloadApptIcs()">📅 Add to Calendar</a>
+    </div>
+    <button class="btn btn-red" id="apptDeleteBtn" style="margin-top:4px;display:none" onclick="deleteAppt()">Delete Appointment</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Smoke log modal -->
+<div class="modal-overlay" id="smokeModal" onclick="if(event.target===this)closeModal('smokeModal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Cigarette Logged</div>
+    <div class="modal-sub" id="smokeModalSub">Adding one cigarette</div>
+    <div class="field-group">
+      <label class="field-label">Trigger / Context (optional)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0" id="triggerPicker">
+        <button class="mood-btn" data-t="After meal"    onclick="pickTrigger(this)">🍽️ After meal</button>
+        <button class="mood-btn" data-t="Stress"        onclick="pickTrigger(this)">😤 Stress</button>
+        <button class="mood-btn" data-t="Break"         onclick="pickTrigger(this)">☕ Break</button>
+        <button class="mood-btn" data-t="Social"        onclick="pickTrigger(this)">👥 Social</button>
+        <button class="mood-btn" data-t="Craving"       onclick="pickTrigger(this)">🔥 Craving</button>
+        <button class="mood-btn" data-t="Morning"       onclick="pickTrigger(this)">🌅 Morning</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Notes (optional)</label>
+      <input type="text" class="field-input" id="smokeTriggerNote" placeholder="What's going on?">
+    </div>
+    <button class="btn btn-smoke" onclick="confirmSmoke()">Log Cigarette</button>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="closeModal('smokeModal')">Cancel – I'll resist</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ─────────────────────────────────────── -->
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Lodaya Health</h1>
+      <p id="topbarSub">Daily Tracker</p>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn-wrap">
+        <button class="icon-btn" onclick="showPage(4)" title="Settings">⚙️</button>
+        <span class="notif-dot" id="notifDot" style="display:none"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PAGE 0: WEIGHT ───────────────────────── -->
+    <div class="page active" id="page0">
+      <div class="person-rail" id="weightPersonRail"></div>
+      <div id="weightContent"></div>
+    </div>
+
+    <!-- PAGE 1: SMOKING ──────────────────────── -->
+    <div class="page" id="page1">
+      <div class="person-rail" id="smokePersonRail"></div>
+      <div id="smokeContent"></div>
+    </div>
+
+    <!-- PAGE 2: APPOINTMENTS ─────────────────── -->
+    <div class="page" id="page2">
+      <div id="apptContent"></div>
+    </div>
+
+    <!-- PAGE 3: WATER ────────────────────────── -->
+    <div class="page" id="page3">
+      <div class="person-rail" id="waterPersonRail"></div>
+      <div id="waterContent"></div>
+    </div>
+
+    <!-- PAGE 4: SETTINGS ─────────────────────── -->
+    <div class="page" id="page4">
+      <div id="settingsContent"></div>
+    </div>
+
+    <!-- PAGE 5: FAMILY SCORE ─────────────────── -->
+    <div class="page" id="page5">
+      <div id="scoreContent"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav0" onclick="showPage(0)">
+      <div class="nav-icon">⚖️</div><div class="nav-label">Weight</div>
+    </div>
+    <div class="nav-item" id="nav1" onclick="showPage(1)">
+      <div class="nav-icon">🚬</div><div class="nav-label">Smoking</div>
+    </div>
+    <div class="nav-item" id="nav2" onclick="showPage(2)">
+      <div class="nav-icon">🏥</div><div class="nav-label">Appts</div>
+    </div>
+    <div class="nav-item" id="nav3" onclick="showPage(3)">
+      <div class="nav-icon">💧</div><div class="nav-label">Water</div>
+    </div>
+    <div class="nav-item" id="nav4" onclick="showPage(4)">
+      <div class="nav-icon">⚙️</div><div class="nav-label">Settings</div>
+    </div>
+    <div class="nav-item" id="nav5" onclick="showPage(5)">
+      <div class="nav-icon">🏅</div><div class="nav-label">Score</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT – DATA + RENDER
+═══════════════════════════════════════════════════ -->
+<script>
+// ── CONFIG ──────────────────────────────────────────
+const MEMBERS = [
+  { key:'tejas',  name:'Tejas',  age:31, height:175, smoker:true  },
+  { key:'megh',   name:'Megh',   age:30, height:172, smoker:true  },
+  { key:'geeta',  name:'Geeta',  age:52, height:158, smoker:false },
+  { key:'paresh', name:'Paresh', age:59, height:170, smoker:true  },
+];
+const SMOKERS = MEMBERS.filter(m => m.smoker);
+const WATER_GOAL = 8; // glasses
+const WATER_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 hrs
+const WATER_START_HOUR = 8;
+const WATER_END_HOUR   = 22;
+
+// ── STATE ───────────────────────────────────────────
+let currentPage = 0;
+let weightPerson = 'tejas';
+let smokePerson  = 'tejas';
+let waterPerson  = 'tejas';
+let editWeekKey  = null;
+let editApptId   = null;
+let selectedMoodVal = '';
+let selectedTrigger = '';
+let weightChartInst = null;
+let smokeChartInst  = null;
+
+// ── STORAGE ─────────────────────────────────────────
+const S = {
+  get: (k, d=[]) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set: (k, v)    => localStorage.setItem(k, JSON.stringify(v)),
+  str: (k, d='') => localStorage.getItem(k) ?? d,
+  setStr:(k,v)   => localStorage.setItem(k, v),
+};
+
+// ── UTILITIES ────────────────────────────────────────
+const today = () => new Date().toISOString().split('T')[0];
+function fmtDate(ds) {
+  if (!ds) return '';
+  const d = new Date(ds + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+function fmtDateTime(ds, ts) {
+  if (!ds) return '';
+  const d = new Date(`${ds}T${ts||'00:00'}:00`);
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function getMondayOf(date) {
+  const d = new Date(date); const day = d.getDay();
+  d.setDate(d.getDate() + (day===0?-6:1-day)); d.setHours(0,0,0,0); return d;
+}
+function weekKey(date) { return getMondayOf(date).toISOString().split('T')[0]; }
+function weekLabel(wk) {
+  const mon = new Date(wk+'T00:00:00'), sun = new Date(mon);
+  sun.setDate(mon.getDate()+6);
+  return `${mon.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} – ${sun.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}`;
+}
+function weekNum(wk) {
+  const d = new Date(wk+'T00:00:00'), soy = new Date(d.getFullYear(),0,1);
+  return Math.ceil(((d-soy)/86400000 + soy.getDay()+1)/7);
+}
+function bmi(w, h) { return h ? +(w/((h/100)**2)).toFixed(1) : null; }
+function bmiCat(b) {
+  if (!b) return {l:'–',c:'var(--text3)'};
+  if (b<18.5) return {l:'Underweight',c:'var(--orange)'};
+  if (b<25)   return {l:'Healthy',    c:'var(--green)'};
+  if (b<30)   return {l:'Overweight', c:'var(--orange)'};
+  return           {l:'Obese',        c:'var(--red)'};
+}
+function daysUntil(dateStr) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const then = new Date(dateStr+'T00:00:00');
+  return Math.round((then-now)/86400000);
+}
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+// ── TOAST ────────────────────────────────────────────
+let _toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ── MODAL ────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── PAGE ROUTING ─────────────────────────────────────
+function showPage(idx) {
+  currentPage = idx;
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.nav-item').forEach((n,i) => n.classList.toggle('active', i===idx));
+  const subs = ['Weight Tracker','Smoking Tracker','Doctor Appointments','Water Tracker','Settings & Notifications','Family Score'];
+  document.getElementById('topbarSub').textContent = subs[idx] || '';
+  if (idx===0) renderWeight();
+  else if (idx===1) renderSmoke();
+  else if (idx===2) renderAppts();
+  else if (idx===3) renderWater();
+  else if (idx===4) renderSettings();
+  else if (idx===5) renderScore();
+}
+
+// ── PERSON RAILS ─────────────────────────────────────
+function personRail(containerId, activePerson, clickFn, filter) {
+  const el = document.getElementById(containerId); if (!el) return;
+  const list = filter ? MEMBERS.filter(filter) : MEMBERS;
+  el.innerHTML = list.map(m =>
+    `<button class="person-pill${m.key===activePerson?' active':''}" onclick="${clickFn}('${m.key}')">${m.name}</button>`
+  ).join('');
+}
+function pickMood(btn, rowId) {
+  selectedMoodVal = btn.dataset.mood === selectedMoodVal ? '' : btn.dataset.mood;
+  document.querySelectorAll(`#${rowId} .mood-btn`).forEach(b => b.classList.toggle('selected', b.dataset.mood===selectedMoodVal));
+}
+function pickTrigger(btn) {
+  selectedTrigger = btn.dataset.t === selectedTrigger ? '' : btn.dataset.t;
+  document.querySelectorAll('#triggerPicker .mood-btn').forEach(b => b.classList.toggle('selected', b.dataset.t===selectedTrigger));
+}
+
+// ══════════════════════════════════════════════════════
+// WEIGHT PAGE
+// ══════════════════════════════════════════════════════
+function renderWeight() {
+  personRail('weightPersonRail', weightPerson, 'setWeightPerson');
+  const member = MEMBERS.find(m=>m.key===weightPerson);
+  const entries = S.get(`weight_${weightPerson}`).sort((a,b)=>a.weekKey.localeCompare(b.weekKey));
+  const wk = weekKey(new Date());
+  const cur = entries.find(e=>e.weekKey===wk);
+  const sorted = [...entries].sort((a,b)=>b.weekKey.localeCompare(a.weekKey));
+  const prev = sorted.find(e=>e.weekKey<wk);
+  const target = parseFloat(S.str(`weight_target_${weightPerson}`)) || null;
+
+  let deltaHtml='';
+  if (cur && prev) {
+    const d = (cur.weight - prev.weight).toFixed(1);
+    const dir = d<0?'down':d>0?'up':'same';
+    deltaHtml = `<div class="delta ${dir}">${d<0?'▼':d>0?'▲':'–'} ${Math.abs(d)} kg vs last week</div>`;
+  }
+
+  let bmiv = cur ? bmi(cur.weight, member.height) : null;
+  let bc = bmiCat(bmiv);
+  let progHtml='';
+  if (target && cur) {
+    const start = sorted[sorted.length-1]?.weight || cur.weight;
+    const total = Math.abs(target - start);
+    const done  = Math.abs(cur.weight - start);
+    const pct   = total > 0 ? Math.min(100, Math.round(done/total*100)) : 100;
+    const toGo  = (cur.weight - target).toFixed(1);
+    progHtml = `<div class="prog-wrap">
+      <div class="prog-meta"><span>🎯 Target ${target} kg</span><span>${parseFloat(toGo)>0?toGo+' kg to go':'🎯 Reached!'}</span></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:var(--accent)"></div></div>
+    </div>`;
+  }
+
+  const weekIcsDates = (() => {
+    const mon = getMondayOf(new Date());
+    const dtStart = mon.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+    const monEnd = new Date(mon); monEnd.setHours(1); 
+    const dtEnd = monEnd.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+    return {dtStart, dtEnd};
+  })();
+
+  let html = `
+  <div class="card card-glow anim">
+    <div class="section-head">Week ${weekNum(wk)} · ${weekLabel(wk)}</div>
+    ${cur ? `
+      <div style="display:flex;align-items:baseline;gap:6px">
+        <span class="stat-big">${cur.weight}</span><span class="stat-unit">kg</span>
+      </div>
+      ${deltaHtml}
+      ${cur.mood ? `<div style="font-size:13px;color:var(--text3);margin-top:6px">${cur.mood}</div>` : ''}
+      ${cur.note ? `<div style="font-size:12px;color:var(--text3);font-style:italic;margin-top:2px">"${cur.note}"</div>` : ''}
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;color:${bc.c}">${bmiv}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px">BMI · ${bc.l}</div>
+        </div>
+        ${prev ? `<div style="flex:1;background:var(--bg3);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:20px">${prev.weight}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px">Last week</div>
+        </div>` : ''}
+      </div>
+      ${progHtml}
+    ` : `<div style="color:var(--text3);font-size:14px;padding:8px 0">No entry yet – log your weight for this week.</div>`}
+  </div>
+
+  <button class="btn btn-accent anim" style="margin-bottom:14px" onclick="openWeightModal()">
+    ${cur ? '✏️ Edit This Week' : '+ Log This Week\'s Weight'}
+  </button>
+
+  <div class="card anim">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">🎯 Target</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" class="field-input" id="wtargetInput" style="flex:1" value="${target||''}" placeholder="e.g. 72.0" step="0.1" min="30" max="200">
+      <span style="color:var(--text3);font-size:13px">kg</span>
+      <button class="btn btn-ghost btn-sm" style="width:auto" onclick="saveWeightTarget()">Save</button>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <span style="font-size:12px;color:var(--text3)">📅 Add weekly reminder to Google Calendar</span>
+      <button class="btn btn-ghost btn-sm" style="width:auto;font-size:12px" onclick="downloadWeightIcs()">+ .ics</button>
+    </div>
+  </div>
+
+  ${entries.length >= 2 ? `
+  <div class="card anim">
+    <div class="card-title">Trend</div>
+    <div class="card-sub">${entries.length} weeks logged</div>
+    <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+  </div>` : ''}
+
+  ${sorted.length ? `
+  <div class="section-head">History</div>
+  <div class="card anim" style="padding:4px 0">
+    ${sorted.slice(0,8).map((e,i)=>{
+      const prv = sorted[i+1];
+      let dh='';
+      if(prv){ const d=(e.weight-prv.weight).toFixed(1); const dir=d<0?'down':d>0?'up':'same'; dh=`<span class="delta ${dir}" style="margin:0;font-size:11px;padding:2px 8px">${d>0?'+':''}${d}</span>`; }
+      return `<div class="list-item" style="padding:12px 20px;cursor:pointer" onclick="openWeightModalForWeek('${e.weekKey}')">
+        <div class="list-item-main">
+          <div class="list-item-title">Week ${weekNum(e.weekKey)}</div>
+          <div class="list-item-meta">${weekLabel(e.weekKey)}${e.mood?' · '+e.mood:''}</div>
+        </div>
+        <div class="list-item-right">
+          ${dh}
+          <span style="font-family:'Playfair Display',serif;font-size:20px">${e.weight}</span>
+          <span style="color:var(--text3)">›</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>` : ''}`;
+
+  document.getElementById('weightContent').innerHTML = html;
+  if (entries.length >= 2) setTimeout(() => drawWeightChart(entries), 60);
+}
+
+function setWeightPerson(k) { weightPerson=k; renderWeight(); }
+
+function openWeightModal() { openWeightModalForWeek(weekKey(new Date())); }
+function openWeightModalForWeek(wk) {
+  editWeekKey = wk;
+  const entries = S.get(`weight_${weightPerson}`);
+  const ex = entries.find(e=>e.weekKey===wk);
+  const member = MEMBERS.find(m=>m.key===weightPerson);
+  const lastW = ex?.weight || ([...entries].sort((a,b)=>b.weekKey.localeCompare(a.weekKey)).find(e=>e.weekKey<wk)?.weight) || 70;
+  document.getElementById('wModalTitle').textContent = ex ? 'Edit Weight' : 'Log Weight';
+  document.getElementById('wModalSub').textContent = `${member.name} · ${weekLabel(wk)}`;
+  document.getElementById('wKg').value = ex ? ex.weight : lastW;
+  document.getElementById('wFat').value = ex?.fat || '';
+  document.getElementById('wNote').value = ex?.note || '';
+  selectedMoodVal = ex?.mood || '';
+  document.querySelectorAll('#wMoodRow .mood-btn').forEach(b => b.classList.toggle('selected', b.dataset.mood===selectedMoodVal));
+  document.getElementById('wDeleteBtn').style.display = ex ? 'flex' : 'none';
+  openModal('wModal');
+}
+function adjW(d) {
+  const i=document.getElementById('wKg'); i.value=Math.max(20,Math.min(250,+(parseFloat(i.value||70)+d).toFixed(1)));
+}
+function submitWeight() {
+  const w = parseFloat(document.getElementById('wKg').value);
+  if (!w||w<20||w>250) { toast('Enter a valid weight'); return; }
+  const entries = S.get(`weight_${weightPerson}`);
+  const idx = entries.findIndex(e=>e.weekKey===editWeekKey);
+  const entry = { weekKey:editWeekKey, weight:w, fat:parseFloat(document.getElementById('wFat').value)||null, mood:selectedMoodVal, note:document.getElementById('wNote').value.trim(), savedAt:new Date().toISOString() };
+  if (idx>=0) entries[idx]=entry; else entries.push(entry);
+  entries.sort((a,b)=>a.weekKey.localeCompare(b.weekKey));
+  S.set(`weight_${weightPerson}`, entries);
+  closeModal('wModal'); toast('✓ Weight saved'); renderWeight();
+}
+function deleteWeight() {
+  if (!confirm('Delete this entry?')) return;
+  S.set(`weight_${weightPerson}`, S.get(`weight_${weightPerson}`).filter(e=>e.weekKey!==editWeekKey));
+  closeModal('wModal'); toast('Deleted'); renderWeight();
+}
+function saveWeightTarget() {
+  const v = parseFloat(document.getElementById('wtargetInput').value);
+  if (!v||v<30||v>200) { toast('Enter a valid target'); return; }
+  S.setStr(`weight_target_${weightPerson}`, v); toast(`🎯 Target set: ${v} kg`); renderWeight();
+}
+
+function drawWeightChart(entries) {
+  const ctx = document.getElementById('weightChart'); if (!ctx) return;
+  if (weightChartInst) { weightChartInst.destroy(); weightChartInst=null; }
+  const target = parseFloat(S.str(`weight_target_${weightPerson}`)) || null;
+  const labels = entries.map(e=>'W'+weekNum(e.weekKey));
+  const ds = [{ label:'Weight', data:entries.map(e=>e.weight), borderColor:'#c8ff3e', backgroundColor:'rgba(200,255,62,0.07)', borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#c8ff3e', pointBorderColor:'#0e0e0f', pointBorderWidth:2, tension:0.35, fill:true }];
+  if (target) ds.push({ label:'Target', data:entries.map(()=>target), borderColor:'rgba(200,255,62,0.3)', borderWidth:1.5, borderDash:[6,4], pointRadius:0, fill:false });
+  weightChartInst = new Chart(ctx, { type:'line', data:{labels,datasets:ds}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:!!target,labels:{color:'#9e9b96',font:{size:10},boxWidth:12}}}, scales:{ x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5c5a56',font:{size:10}}}, y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5c5a56',font:{size:10}}} } } });
+}
+
+function downloadWeightIcs() {
+  // Recurring Monday morning reminder – 52 occurrences
+  const lines = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lodaya Health//Weight Tracker//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `SUMMARY:⚖️ Log your weight – ${MEMBERS.find(m=>m.key===weightPerson)?.name}`,
+    `DTSTART;TZID=Asia/Kolkata:${nextMonday()}T070000`,
+    `DTEND;TZID=Asia/Kolkata:${nextMonday()}T073000`,
+    'RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=52',
+    'DESCRIPTION:Open Lodaya Health app and log your weekly weight.',
+    'BEGIN:VALARM','TRIGGER:-PT0M','ACTION:DISPLAY','DESCRIPTION:Time to log your weight!','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  dlFile('lodaya-weight-reminder.ics', lines, 'text/calendar');
+  toast('📅 .ics downloaded – open to add to Google Calendar');
+}
+
+function nextMonday() {
+  const d = getMondayOf(new Date());
+  if (d <= new Date()) d.setDate(d.getDate()+7);
+  return d.toISOString().split('T')[0].replace(/-/g,'');
+}
+
+// ══════════════════════════════════════════════════════
+// SMOKING PAGE
+// ══════════════════════════════════════════════════════
+function renderSmoke() {
+  personRail('smokePersonRail', smokePerson, 'setSmokePerson', m=>m.smoker);
+  const member = MEMBERS.find(m=>m.key===smokePerson);
+  if (!member?.smoker) { document.getElementById('smokeContent').innerHTML=`<div class="empty"><div class="empty-icon">🌿</div><div class="empty-text">${member?.name} is not a smoker.<br>Select Tejas, Megh or Paresh.</div></div>`; return; }
+
+  const todayKey = today();
+  const logs = S.get(`smoke_${smokePerson}`); // [{date, time, trigger, note}]
+  const todayLogs = logs.filter(l=>l.date===todayKey);
+  const todayCount = todayLogs.length;
+
+  // Streak: days with 0 smokes
+  const streak = calcSmokeStreak(logs);
+
+  // Weekly data for chart
+  const weeklyData = getWeeklySmokeTotals(logs, 8);
+
+  // Last 4 weeks avg
+  const last4 = weeklyData.slice(-4).map(w=>w.count);
+  const thisWeekCount = weeklyData[weeklyData.length-1]?.count || 0;
+  const prevWeekCount = weeklyData[weeklyData.length-2]?.count || 0;
+
+  // Streak ring SVG
+  const maxStreak = 30;
+  const R = 48, C = 2*Math.PI*R;
+  const pct = Math.min(streak/maxStreak, 1);
+  const strokeColor = streak===0?'var(--text3)':streak<3?'var(--orange)':streak<7?'var(--accent)':'var(--green)';
+
+  const html = `
+  <div class="card card-glow anim">
+    <div style="display:flex;gap:16px;align-items:center">
+      <div style="position:relative;flex-shrink:0">
+        <svg class="streak-svg" viewBox="0 0 110 110" style="width:110px;height:110px;transform:rotate(-90deg)">
+          <circle class="streak-bg-circle" cx="55" cy="55" r="${R}"/>
+          <circle class="streak-fill-circle" cx="55" cy="55" r="${R}"
+            stroke="${strokeColor}"
+            stroke-dasharray="${C}"
+            stroke-dashoffset="${C-(C*pct)}"
+            style="transition:stroke-dashoffset 0.7s cubic-bezier(0.34,1.56,0.64,1)"/>
+        </svg>
+        <div class="streak-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:600;line-height:1">${streak}</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">day streak</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="section-head" style="margin-bottom:6px">Today</div>
+        <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:600;line-height:1;color:${todayCount===0?'var(--green)':todayCount>10?'var(--red)':'var(--text)'}">${todayCount}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">cigarette${todayCount===1?'':'s'} today</div>
+        ${prevWeekCount>0?`<div style="font-size:12px;color:var(--text2);margin-top:6px">Last week: ${prevWeekCount} total · This week: ${thisWeekCount}</div>`:''}
+      </div>
+    </div>
+    ${streak>0?`<div style="margin-top:12px;font-size:13px;color:var(--green);font-weight:500">🎉 ${streak} day${streak>1?'s':''} smoke-free${streak>=7?' – incredible!':streak>=3?' – keep going!':' – great start!'}</div>`:''}
+    ${todayCount>0?`<div style="margin-top:10px;font-size:12px;color:var(--text3)">Today: ${todayLogs.map(l=>`${l.time}${l.trigger?' ('+l.trigger+')':''}`).join(' · ')}</div>`:''}
+  </div>
+
+  <button class="smoke-fab smoke-pulse" onclick="openModal('smokeModal');resetSmokeModal()">
+    <div class="smoke-fab-icon">🚬</div>
+    <div class="smoke-fab-label">Log a Cigarette</div>
+    <div class="smoke-fab-sub">Tap to record – awareness is the first step</div>
+  </button>
+
+  <div class="stat-row anim">
+    <div class="stat-mini">
+      <div class="stat-mini-val">${weeklyData.reduce((s,w)=>s+w.count,0)}</div>
+      <div class="stat-mini-label">All Time</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-val" style="color:${thisWeekCount<prevWeekCount?'var(--green)':thisWeekCount>prevWeekCount?'var(--red)':'var(--text)'}">${thisWeekCount}</div>
+      <div class="stat-mini-label">This Week</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-val">${last4.length?Math.round(last4.reduce((s,v)=>s+v,0)/last4.length):0}</div>
+      <div class="stat-mini-label">4-wk Avg</div>
+    </div>
+  </div>
+
+  ${weeklyData.length>=2?`
+  <div class="card anim">
+    <div class="card-title">Weekly Reduction</div>
+    <div class="card-sub">Goal: fewer bars each week</div>
+    <div class="chart-wrap"><canvas id="smokeChart"></canvas></div>
+  </div>` : `<div class="card" style="text-align:center;color:var(--text3);font-size:13px;padding:24px">Log for 2+ weeks to see your reduction chart.</div>`}
+
+  ${todayLogs.length?`
+  <div class="section-head">Today's Log</div>
+  <div class="card anim" style="padding:4px 0">
+    ${[...todayLogs].reverse().map((l,i)=>`
+      <div class="list-item" style="padding:11px 20px">
+        <div class="list-item-main">
+          <div class="list-item-title">${l.time}${l.trigger?' · '+l.trigger:''}</div>
+          ${l.note?`<div class="list-item-meta">${l.note}</div>`:''}
+        </div>
+        <button class="btn btn-red btn-sm" style="width:auto;padding:5px 10px;font-size:11px" onclick="deleteSmoke(${logs.length-1-i})">✕</button>
+      </div>`).join('')}
+  </div>` : ''}`;
+
+  document.getElementById('smokeContent').innerHTML = html;
+  if (weeklyData.length>=2) setTimeout(()=>drawSmokeChart(weeklyData), 60);
+}
+
+function setSmokePerson(k) { smokePerson=k; renderSmoke(); }
+
+function resetSmokeModal() {
+  selectedTrigger = '';
+  document.querySelectorAll('#triggerPicker .mood-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('smokeTriggerNote').value = '';
+  const member = MEMBERS.find(m=>m.key===smokePerson);
+  document.getElementById('smokeModalSub').textContent = `${member?.name} · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+}
+
+function confirmSmoke() {
+  const now = new Date();
+  const log = {
+    date: today(),
+    time: now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    trigger: selectedTrigger,
+    note: document.getElementById('smokeTriggerNote').value.trim(),
+    ts: now.toISOString()
+  };
+  const logs = S.get(`smoke_${smokePerson}`);
+  logs.push(log);
+  S.set(`smoke_${smokePerson}`, logs);
+  closeModal('smokeModal');
+  toast('Logged. You\'re aware – that\'s the first step. 💪');
+  renderSmoke();
+}
+
+function deleteSmoke(idx) {
+  const logs = S.get(`smoke_${smokePerson}`);
+  logs.splice(idx,1); S.set(`smoke_${smokePerson}`, logs);
+  toast('Removed'); renderSmoke();
+}
+
+function calcSmokeStreak(logs) {
+  const logDates = new Set(logs.map(l=>l.date));
+  let streak=0, d=new Date(); d.setHours(0,0,0,0);
+  // if today has smokes, streak is 0
+  if (logDates.has(today())) return 0;
+  d.setDate(d.getDate()-1);
+  while (true) {
+    const dk = d.toISOString().split('T')[0];
+    if (logDates.has(dk)) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+    if (streak>365) break;
+  }
+  return streak;
+}
+
+function getWeeklySmokeTotals(logs, numWeeks) {
+  const result=[];
+  const now=new Date(); now.setHours(0,0,0,0);
+  for (let i=numWeeks-1;i>=0;i--) {
+    const mon=getMondayOf(new Date(now)); mon.setDate(mon.getDate()-i*7);
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    const wk=mon.toISOString().split('T')[0];
+    const count=logs.filter(l=>l.date>=wk&&l.date<=sun.toISOString().split('T')[0]).length;
+    result.push({wk, label:'W'+weekNum(wk), count});
+  }
+  return result.filter((_,i)=>i>0||result[0].count>0);
+}
+
+function drawSmokeChart(weeklyData) {
+  const ctx=document.getElementById('smokeChart'); if (!ctx) return;
+  if (smokeChartInst) { smokeChartInst.destroy(); smokeChartInst=null; }
+  const counts = weeklyData.map(w=>w.count);
+  const maxC = Math.max(...counts) || 1;
+  smokeChartInst = new Chart(ctx, {
+    type:'bar',
+    data: { labels:weeklyData.map(w=>w.label), datasets:[{
+      data:counts,
+      backgroundColor:counts.map(c=>c===0?'rgba(92,255,143,0.5)':c<maxC*0.5?'rgba(200,255,62,0.5)':'rgba(255,124,92,0.5)'),
+      borderColor:counts.map(c=>c===0?'var(--green)':c<maxC*0.5?'var(--accent)':'var(--smoke)'),
+      borderWidth:1.5, borderRadius:6,
+    }]},
+    options:{ responsive:true,maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{
+      x:{grid:{display:false},ticks:{color:'#5c5a56',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5c5a56',font:{size:10},stepSize:1},min:0}
+    }}
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// APPOINTMENTS PAGE
+// ══════════════════════════════════════════════════════
+let editingApptId = null;
+
+function renderAppts() {
+  const appts = S.get('appointments',[]).sort((a,b)=>a.date.localeCompare(b.date));
+  const upcoming = appts.filter(a=>daysUntil(a.date)>=0);
+  const past     = appts.filter(a=>daysUntil(a.date)<0);
+
+  let html = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div class="section-head" style="margin:0">Doctor Appointments</div>
+    <button class="btn btn-accent btn-sm" style="width:auto" onclick="openNewAppt()">+ New</button>
+  </div>`;
+
+  if (!appts.length) {
+    html += `<div class="empty"><div class="empty-icon">🏥</div><div class="empty-text">No appointments yet.<br>Tap + New to add one.</div></div>`;
+  } else {
+    if (upcoming.length) {
+      html += `<div class="section-head">Upcoming (${upcoming.length})</div><div class="card anim" style="padding:4px 0">`;
+      upcoming.forEach(a => { html += apptItemHtml(a); });
+      html += '</div>';
+    }
+    if (past.length) {
+      html += `<div class="section-head" style="margin-top:8px">Past</div><div class="card" style="padding:4px 0;opacity:0.7">`;
+      past.slice(-5).reverse().forEach(a => { html += apptItemHtml(a); });
+      html += '</div>';
+    }
+  }
+
+  document.getElementById('apptContent').innerHTML = html;
+}
+
+function apptItemHtml(a) {
+  const du = daysUntil(a.date);
+  const member = MEMBERS.find(m=>m.key===a.person);
+  let pill='', pillText='';
+  if (du<0)       { pill='past';     pillText='Done'; }
+  else if (du===0){ pill='today';    pillText='TODAY'; }
+  else if (du<=3) { pill='soon';     pillText=`in ${du}d`; }
+  else            { pill='upcoming'; pillText=`in ${du}d`; }
+  return `<div class="list-item" style="padding:13px 20px;cursor:pointer" onclick="openEditAppt('${a.id}')">
+    <div class="list-item-main">
+      <div class="list-item-title">${a.doctor}</div>
+      <div class="list-item-meta">${member?.name||a.person} · ${fmtDateTime(a.date,a.time)}${a.location?' · '+a.location:''}</div>
+      ${a.notes?`<div class="list-item-meta" style="margin-top:2px;font-style:italic">${a.notes}</div>`:''}
+    </div>
+    <div class="list-item-right">
+      <span class="appt-pill ${pill}">${pillText}</span>
+      <span style="color:var(--text3)">›</span>
+    </div>
+  </div>`;
+}
+
+function openNewAppt() {
+  editingApptId = null;
+  document.getElementById('apptModalTitle').textContent = 'New Appointment';
+  document.getElementById('apptDoctor').value = '';
+  document.getElementById('apptDate').value = '';
+  document.getElementById('apptTime').value = '09:00';
+  document.getElementById('apptLocation').value = '';
+  document.getElementById('apptNotes').value = '';
+  document.getElementById('apptDeleteBtn').style.display = 'none';
+  document.getElementById('apptPerson').value = weightPerson;
+  openModal('apptModal');
+}
+
+function openEditAppt(id) {
+  const appts = S.get('appointments',[]);
+  const a = appts.find(x=>x.id===id); if (!a) return;
+  editingApptId = id;
+  document.getElementById('apptModalTitle').textContent = 'Edit Appointment';
+  document.getElementById('apptDoctor').value   = a.doctor;
+  document.getElementById('apptDate').value     = a.date;
+  document.getElementById('apptTime').value     = a.time||'09:00';
+  document.getElementById('apptLocation').value = a.location||'';
+  document.getElementById('apptNotes').value    = a.notes||'';
+  document.getElementById('apptPerson').value   = a.person;
+  document.getElementById('apptDeleteBtn').style.display = 'flex';
+  openModal('apptModal');
+}
+
+function saveAppt() {
+  const doctor   = document.getElementById('apptDoctor').value.trim();
+  const date     = document.getElementById('apptDate').value;
+  const time     = document.getElementById('apptTime').value;
+  const location = document.getElementById('apptLocation').value.trim();
+  const notes    = document.getElementById('apptNotes').value.trim();
+  const person   = document.getElementById('apptPerson').value;
+  if (!doctor||!date) { toast('Doctor name and date are required'); return; }
+  const appts = S.get('appointments',[]);
+  if (editingApptId) {
+    const idx = appts.findIndex(a=>a.id===editingApptId);
+    if (idx>=0) appts[idx] = {...appts[idx], doctor, date, time, location, notes, person};
+  } else {
+    appts.push({ id:uid(), doctor, date, time, location, notes, person, createdAt:new Date().toISOString() });
+  }
+  appts.sort((a,b)=>a.date.localeCompare(b.date));
+  S.set('appointments', appts);
+  closeModal('apptModal'); toast('✓ Appointment saved'); renderAppts();
+}
+
+function deleteAppt() {
+  if (!confirm('Delete this appointment?')) return;
+  S.set('appointments', S.get('appointments',[]).filter(a=>a.id!==editingApptId));
+  closeModal('apptModal'); toast('Deleted'); renderAppts();
+}
+
+function downloadApptIcs() {
+  const doctor   = document.getElementById('apptDoctor').value.trim();
+  const date     = document.getElementById('apptDate').value;
+  const time     = document.getElementById('apptTime').value || '09:00';
+  const location = document.getElementById('apptLocation').value.trim();
+  const notes    = document.getElementById('apptNotes').value.trim();
+  const person   = document.getElementById('apptPerson').value;
+  const member   = MEMBERS.find(m=>m.key===person);
+  if (!date) { toast('Please set a date first'); return; }
+  const dtStart = `${date.replace(/-/g,'')}T${time.replace(':','')}00`;
+  const [h,m] = time.split(':').map(Number);
+  const endH = String(h+1).padStart(2,'0');
+  const dtEnd = `${date.replace(/-/g,'')}T${endH}${String(m).padStart(2,'0')}00`;
+  const lines = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lodaya Health//Appointments//EN','CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `SUMMARY:🏥 ${doctor} – ${member?.name||person}`,
+    `DTSTART;TZID=Asia/Kolkata:${dtStart}`,
+    `DTEND;TZID=Asia/Kolkata:${dtEnd}`,
+    `LOCATION:${location||''}`,
+    `DESCRIPTION:${notes||'Doctor appointment'}`,
+    'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:Appointment tomorrow!','END:VALARM',
+    'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:Appointment in 1 hour!','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  dlFile(`appointment-${date}.ics`, lines, 'text/calendar');
+  toast('📅 .ics downloaded – open to add to Google Calendar');
+}
+
+// ══════════════════════════════════════════════════════
+// WATER PAGE
+// ══════════════════════════════════════════════════════
+function renderWater() {
+  personRail('waterPersonRail', waterPerson, 'setWaterPerson');
+  const key = `water_${waterPerson}_${today()}`;
+  const glasses = S.get(key, []);  // array of timestamps
+  const count = glasses.length;
+  const pct = Math.min(100, Math.round(count/WATER_GOAL*100));
+  const remaining = Math.max(0, WATER_GOAL - count);
+
+  const drops = Array.from({length:WATER_GOAL},(_,i)=>
+    `<button class="water-drop${i<count?' filled':''}" onclick="toggleWater(${i})" title="Glass ${i+1}">💧</button>`
+  ).join('');
+
+  const member = MEMBERS.find(m=>m.key===waterPerson);
+  const scheduleHtml = buildWaterSchedule(glasses);
+
+  const html = `
+  <div class="card card-glow anim">
+    <div class="section-head">Today – ${member?.name}</div>
+    <div style="display:flex;align-items:baseline;gap:6px">
+      <span class="stat-big" style="color:${count>=WATER_GOAL?'var(--blue)':count>=WATER_GOAL/2?'var(--text)':'var(--text2)'}">${count}</span>
+      <span class="stat-unit">/ ${WATER_GOAL} glasses</span>
+    </div>
+    <div class="water-grid" style="margin:14px 0">${drops}</div>
+    <div class="prog-wrap">
+      <div class="prog-meta"><span>${pct}% of daily goal</span><span>${remaining>0?remaining+' to go':'🎉 Goal met!'}</span></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:var(--blue)"></div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+    <button class="btn btn-accent" style="flex:1" onclick="addWater()">💧 Add Glass</button>
+    <button class="btn btn-ghost" style="flex:0 0 auto;padding:0 18px" onclick="undoWater()">Undo</button>
+  </div>
+
+  <div class="card anim">
+    <div class="card-title" style="margin-bottom:4px">Reminder Schedule</div>
+    <div class="card-sub">8 AM – 10 PM · Every 2 hours</div>
+    ${scheduleHtml}
+    <div style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" style="width:auto" onclick="downloadWaterIcs()">📅 Add reminders to Google Calendar</button>
+    </div>
+  </div>`;
+
+  document.getElementById('waterContent').innerHTML = html;
+}
+
+function setWaterPerson(k) { waterPerson=k; renderWater(); }
+
+function addWater() {
+  const key = `water_${waterPerson}_${today()}`;
+  const glasses = S.get(key,[]);
+  if (glasses.length >= WATER_GOAL) { toast('Daily goal already met! 🎉'); return; }
+  glasses.push(new Date().toISOString());
+  S.set(key, glasses); renderWater();
+  if (glasses.length === WATER_GOAL) toast('🎉 Daily water goal met!');
+  else toast(`💧 Glass ${glasses.length} of ${WATER_GOAL}`);
+}
+
+function undoWater() {
+  const key = `water_${waterPerson}_${today()}`;
+  const glasses = S.get(key,[]);
+  if (!glasses.length) { toast('Nothing to undo'); return; }
+  glasses.pop(); S.set(key, glasses); renderWater(); toast('Removed last glass');
+}
+
+function toggleWater(idx) {
+  const key = `water_${waterPerson}_${today()}`;
+  const glasses = S.get(key,[]);
+  if (idx < glasses.length) { glasses.splice(idx,1); } else { glasses.push(new Date().toISOString()); }
+  S.set(key, glasses); renderWater();
+}
+
+function buildWaterSchedule(glasses) {
+  const slots=[], now=new Date();
+  for (let h=WATER_START_HOUR;h<=WATER_END_HOUR;h+=2) {
+    const slotTime = new Date(); slotTime.setHours(h,0,0,0);
+    const slotEnd  = new Date(); slotEnd.setHours(h+2,0,0,0);
+    const consumed = glasses.filter(ts=>{ const t=new Date(ts); return t>=slotTime&&t<slotEnd; }).length;
+    const isPast = now > slotEnd;
+    const isCurrent = now >= slotTime && now < slotEnd;
+    slots.push({h, consumed, isPast, isCurrent});
+  }
+  return `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+    ${slots.map(s=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px;color:${s.isCurrent?'var(--accent)':s.isPast?'var(--text3)':'var(--text2)'};min-width:50px;font-weight:${s.isCurrent?'700':'400'}">${String(s.h).padStart(2,'0')}:00</span>
+      <span style="font-size:16px">${s.consumed>0?'💧'.repeat(Math.min(s.consumed,3)):s.isPast?'○':'◌'}</span>
+      ${s.isCurrent?`<span style="font-size:10px;background:var(--accent-d);color:var(--accent);padding:2px 8px;border-radius:8px;font-weight:700">NOW</span>`:''}
+      ${s.isPast&&s.consumed===0?`<span style="font-size:10px;color:var(--red);opacity:0.7">missed</span>`:''}
+    </div>`).join('')}
+  </div>`;
+}
+
+function downloadWaterIcs() {
+  let events = [];
+  const baseDate = new Date(); baseDate.setDate(baseDate.getDate()+1); // tomorrow onwards
+  const member = MEMBERS.find(m=>m.key===waterPerson);
+  for (let h=WATER_START_HOUR;h<=WATER_END_HOUR;h+=2) {
+    const hStr = String(h).padStart(2,'0');
+    events.push([
+      'BEGIN:VEVENT',
+      `SUMMARY:💧 Drink water – ${member?.name}`,
+      `DTSTART;TZID=Asia/Kolkata:${baseDate.toISOString().split('T')[0].replace(/-/g,'')}T${hStr}0000`,
+      `DTEND;TZID=Asia/Kolkata:${baseDate.toISOString().split('T')[0].replace(/-/g,'')}T${hStr}1500`,
+      'RRULE:FREQ=DAILY;COUNT=90',
+      'BEGIN:VALARM','TRIGGER:-PT0M','ACTION:DISPLAY','DESCRIPTION:Time to drink water! 💧','END:VALARM',
+      'END:VEVENT'
+    ].join('\r\n'));
+  }
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lodaya Health//Water//EN','CALSCALE:GREGORIAN', ...events, 'END:VCALENDAR'].join('\r\n');
+  dlFile('lodaya-water-reminders.ics', ics, 'text/calendar');
+  toast('📅 .ics with 8 daily reminders downloaded');
+}
+
+// ══════════════════════════════════════════════════════
+// SETTINGS PAGE (notifications + server setup)
+// ══════════════════════════════════════════════════════
+function renderSettings() {
+  const notifGranted = Notification?.permission === 'granted';
+  const serverUrl = S.str('push_server_url');
+  const pushSub   = S.str('push_subscribed') === '1';
+
+  const html = `
+  <div class="section-head">Notifications</div>
+
+  ${!notifGranted ? `
+  <div class="card anim" style="border-color:rgba(200,255,62,0.25)">
+    <div class="card-title" style="color:var(--accent)">🔔 Enable Notifications</div>
+    <div class="card-sub">Required for background push alerts even when app is closed.</div>
+    <button class="btn btn-accent" onclick="requestNotifPermission()">Allow Notifications</button>
+  </div>` : `
+  <div class="card anim" style="border-color:rgba(92,255,143,0.25)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">✅</span>
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--green)">Notifications enabled</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Alerts will appear even when app is closed (requires server setup below)</div>
+      </div>
+    </div>
+  </div>`}
+
+  <div class="card anim">
+    <div style="padding:0">
+      <div class="notif-row">
+        <div><div class="notif-info-title">⚖️ Monday Weight Reminder</div><div class="notif-info-sub">Every Monday at 7:00 AM IST</div></div>
+        <button class="toggle ${S.str('notif_weight')==='1'?'on':''}" onclick="toggleNotif('weight',this)"></button>
+      </div>
+      <div class="notif-row">
+        <div><div class="notif-info-title">💧 Water Reminders</div><div class="notif-info-sub">Every 2 hours, 8 AM – 10 PM</div></div>
+        <button class="toggle ${S.str('notif_water')==='1'?'on':''}" onclick="toggleNotif('water',this)"></button>
+      </div>
+      <div class="notif-row">
+        <div><div class="notif-info-title">🏥 Appointment Alerts</div><div class="notif-info-sub">24 hrs + 1 hr before each appointment</div></div>
+        <button class="toggle ${S.str('notif_appt')==='1'?'on':''}" onclick="toggleNotif('appt',this)"></button>
+      </div>
+      <div class="notif-row" style="border:none">
+        <div><div class="notif-info-title">🚬 Daily Smoke Check-in</div><div class="notif-info-sub">9 PM reminder to log if you smoked today</div></div>
+        <button class="toggle ${S.str('notif_smoke')==='1'?'on':''}" onclick="toggleNotif('smoke',this)"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head" style="margin-top:8px">Push Server Setup (one-time)</div>
+
+  <div class="setup-card anim">
+    <div class="setup-card-title">🖥️ Deploy Your Push Server</div>
+
+    <div class="setup-step">
+      <div class="setup-num">1</div>
+      <div class="setup-text">Go to <strong>railway.app</strong> or <strong>render.com</strong> → New Project → Deploy from GitHub (both free tier, always-on).</div>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">2</div>
+      <div class="setup-text">Create a new repo with these two files – the full server code is in the app download:</div>
+    </div>
+
+    <span class="code">// package.json
+{
+  "name": "lodaya-push-server",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "web-push": "^3.6.7",
+    "node-cron": "^3.0.3",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}</span>
+
+    <div class="setup-step">
+      <div class="setup-num">3</div>
+      <div class="setup-text">Set these environment variables in Railway/Render:<br>
+        <strong>VAPID_PUBLIC_KEY</strong>, <strong>VAPID_PRIVATE_KEY</strong>, <strong>VAPID_EMAIL</strong><br>
+        Generate keys once at: <code style="color:var(--accent);font-family:monospace;font-size:11px">npx web-push generate-vapid-keys</code>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="setup-num">4</div>
+      <div class="setup-text">After deployment, paste your server URL below and tap <strong>Subscribe</strong>:</div>
+    </div>
+    <div class="server-url-row">
+      <input type="url" class="field-input" id="serverUrlInput" placeholder="https://your-app.railway.app" value="${serverUrl}">
+      <button class="btn btn-accent btn-sm" style="width:auto;flex-shrink:0" onclick="subscribePush()">Subscribe</button>
+    </div>
+    ${pushSub ? `<div style="margin-top:10px;font-size:13px;color:var(--green);font-weight:500">✅ Subscribed – background push active</div>` : ''}
+
+    <button class="btn btn-ghost" style="margin-top:14px;font-size:13px" onclick="downloadServerFiles()">⬇️ Download server.js</button>
+  </div>
+
+  <div class="section-head" style="margin-top:8px">App Info</div>
+  <div class="card" style="font-size:13px;color:var(--text2);line-height:1.7">
+    <div>Version: 2.0 · Offline-first PWA</div>
+    <div>Data: stored locally on your device</div>
+    <div>Compatible with main Lodaya Health Dashboard</div>
+    <div style="margin-top:10px"><button class="btn btn-red btn-sm" style="width:auto" onclick="if(confirm('Clear ALL local data?')){localStorage.clear();toast('Data cleared');renderSettings();}">Clear All Data</button></div>
+  </div>`;
+
+  document.getElementById('settingsContent').innerHTML = html;
+}
+
+function toggleNotif(key, btn) {
+  const cur = S.str(`notif_${key}`)==='1';
+  S.setStr(`notif_${key}`, cur?'0':'1');
+  btn.classList.toggle('on', !cur);
+  if (!cur) { scheduleLocalNotifs(); toast(`✓ ${key} reminders on`); }
+  else toast(`${key} reminders off`);
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) { toast('Notifications not supported on this device'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm==='granted') { toast('✓ Notifications enabled'); scheduleLocalNotifs(); renderSettings(); }
+  else toast('Permission denied – notifications blocked');
+}
+
+// ══════════════════════════════════════════════════════
+// PUSH SUBSCRIPTION
+// ══════════════════════════════════════════════════════
+// VAPID public key – replace with your generated key
+const VAPID_PUBLIC_KEY = 'BP9ObtwmgNFlFjw7Vr5Z5mjBwylrEV7JmarF9fF9Dy3X7x0RZLwXaC_Jezd1dO9TpLjxUcNb_1js5EDl2DBPxw8';
+
+async function subscribePush() {
+  const serverUrl = document.getElementById('serverUrlInput').value.trim();
+  if (!serverUrl) { toast('Paste your server URL first'); return; }
+  S.setStr('push_server_url', serverUrl);
+
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    toast('Push not supported on this browser'); return;
+  }
+  if (Notification.permission !== 'granted') {
+    await requestNotifPermission();
+    if (Notification.permission !== 'granted') return;
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    // Send subscription + user prefs to server
+    const payload = {
+      subscription: sub.toJSON(),
+      person: weightPerson,
+      prefs: {
+        weight: S.str('notif_weight')==='1',
+        water:  S.str('notif_water')==='1',
+        appt:   S.str('notif_appt')==='1',
+        smoke:  S.str('notif_smoke')==='1',
+      },
+      appointments: S.get('appointments',[]).filter(a=>daysUntil(a.date)>=0).map(a=>({date:a.date,time:a.time,doctor:a.doctor,person:a.person})),
+      timezone: 'Asia/Kolkata'
+    };
+
+    const res = await fetch(`${serverUrl}/subscribe`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+    });
+    if (res.ok) {
+      S.setStr('push_subscribed','1');
+      toast('✅ Push subscribed – background notifications active');
+      renderSettings();
+    } else {
+      toast('Server error – check URL');
+    }
+  } catch(e) {
+    toast('Error: '+e.message);
+    console.error(e);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4-base64String.length%4)%4);
+  const base64 = (base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw = window.atob(base64);
+  return new Uint8Array([...raw].map(c=>c.charCodeAt(0)));
+}
+
+// ══════════════════════════════════════════════════════
+// LOCAL NOTIFICATIONS (fallback when app is open)
+// ══════════════════════════════════════════════════════
+function scheduleLocalNotifs() {
+  if (Notification.permission!=='granted') return;
+  // Clear old timers
+  if (window._notifTimers) window._notifTimers.forEach(clearTimeout);
+  window._notifTimers = [];
+
+  const now = new Date();
+
+  // Water reminders
+  if (S.str('notif_water')==='1') {
+    for (let h=WATER_START_HOUR;h<=WATER_END_HOUR;h+=2) {
+      const target = new Date(); target.setHours(h,0,0,0);
+      const delay = target - now;
+      if (delay>0 && delay < 86400000) {
+        window._notifTimers.push(setTimeout(()=>{
+          new Notification('💧 Time to drink water!', { body:`Lodaya Health · ${String(h).padStart(2,'0')}:00 reminder`, icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y=".9em" font-size="64">💧</text></svg>' });
+        }, delay));
+      }
+    }
+  }
+
+  // Upcoming appointment alerts (today only, 1hr before)
+  if (S.str('notif_appt')==='1') {
+    S.get('appointments',[]).filter(a=>a.date===today()).forEach(a=>{
+      const [ah,am] = (a.time||'09:00').split(':').map(Number);
+      const apptTime = new Date(); apptTime.setHours(ah,am,0,0);
+      const alertTime = new Date(apptTime - 60*60*1000);
+      const delay = alertTime - now;
+      if (delay>0) {
+        window._notifTimers.push(setTimeout(()=>{
+          new Notification(`🏥 Appointment in 1 hour!`, { body:`${a.doctor}${a.location?' · '+a.location:''}` });
+        }, delay));
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// SERVER FILES DOWNLOAD
+// ══════════════════════════════════════════════════════
+function downloadServerFiles() {
+  const serverJs = `// Lodaya Health Push Server
+// Deploy to Railway or Render (free tier)
+// npm install web-push node-cron express cors
+
+const express = require('express');
+const webpush = require('web-push');
+const cron    = require('node-cron');
+const cors    = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Set VAPID keys as environment variables:
+// VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
+webpush.setVapidDetails(
+  \`mailto:\${process.env.VAPID_EMAIL}\`,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
+
+// In-memory subscription store (use a DB for production)
+const subscriptions = new Map();
+
+app.post('/subscribe', (req, res) => {
+  const { subscription, person, prefs, appointments, timezone } = req.body;
+  subscriptions.set(subscription.endpoint, { subscription, person, prefs, appointments, timezone });
+  console.log(\`Subscribed: \${person}\`);
+  res.json({ ok: true });
+});
+
+app.post('/unsubscribe', (req, res) => {
+  const { endpoint } = req.body;
+  subscriptions.delete(endpoint);
+  res.json({ ok: true });
+});
+
+app.get('/health', (req,res) => res.json({ status:'ok', subscribers: subscriptions.size }));
+
+async function sendPush(subData, payload) {
+  try {
+    await webpush.sendNotification(subData.subscription, JSON.stringify(payload));
+  } catch(e) {
+    if (e.statusCode === 410) subscriptions.delete(subData.subscription.endpoint);
+    else console.error('Push error:', e.message);
+  }
+}
+
+// ── Monday 7 AM IST weight reminder ──────────────────
+// IST = UTC+5:30, so 7:00 AM IST = 1:30 AM UTC
+cron.schedule('30 1 * * 1', async () => {
+  console.log('[CRON] Monday weight reminder');
+  for (const [, sub] of subscriptions) {
+    if (!sub.prefs?.weight) continue;
+    await sendPush(sub, {
+      title: '⚖️ Weekly weigh-in!',
+      body: \`Good morning \${sub.person}! Time to log your weight for this week.\`,
+      icon: '/icon-192.png',
+      tag: 'weight-reminder',
+      url: '/'
+    });
+  }
+});
+
+// ── Water reminders every 2 hrs, 8 AM–10 PM IST ──────
+// IST hours: 8,10,12,14,16,18,20,22 → UTC: 2:30,4:30,6:30,8:30,10:30,12:30,14:30,16:30
+const waterUTCHours = [2,4,6,8,10,12,14,16];
+waterUTCHours.forEach(h => {
+  cron.schedule(\`30 \${h} * * *\`, async () => {
+    console.log(\`[CRON] Water reminder UTC \${h}:30\`);
+    for (const [, sub] of subscriptions) {
+      if (!sub.prefs?.water) continue;
+      await sendPush(sub, {
+        title: '💧 Drink water!',
+        body: 'Stay hydrated – have a glass of water now.',
+        icon: '/icon-192.png',
+        tag: 'water-reminder',
+        url: '/'
+      });
+    }
+  });
+});
+
+// ── Appointment alerts – check every hour ────────────
+cron.schedule('0 * * * *', async () => {
+  const nowUTC = new Date();
+  for (const [, sub] of subscriptions) {
+    if (!sub.prefs?.appt || !sub.appointments) continue;
+    for (const appt of sub.appointments) {
+      const apptIST = new Date(\`\${appt.date}T\${appt.time||'09:00'}:00+05:30\`);
+      const diff = apptIST - nowUTC;
+      // 24 hr alert
+      if (diff > 0 && diff <= 86400000 && diff > 82800000) {
+        await sendPush(sub, { title:'🏥 Appointment tomorrow!', body:\`\${appt.doctor} · \${appt.time || '09:00'}\`, tag:'appt-24h-'+appt.date });
+      }
+      // 1 hr alert
+      if (diff > 0 && diff <= 3600000 && diff > 3540000) {
+        await sendPush(sub, { title:'🏥 Appointment in 1 hour!', body:\`\${appt.doctor} – get ready!\`, tag:'appt-1h-'+appt.date });
+      }
+    }
+  }
+});
+
+// ── 9 PM smoke check-in ───────────────────────────────
+// 9 PM IST = 3:30 PM UTC
+cron.schedule('30 15 * * *', async () => {
+  for (const [, sub] of subscriptions) {
+    if (!sub.prefs?.smoke) continue;
+    await sendPush(sub, {
+      title: '🚬 Smoke check-in',
+      body: "How did you do today? Log if you smoked – awareness is progress.",
+      tag: 'smoke-checkin',
+      url: '/'
+    });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(\`Lodaya Push Server on port \${PORT}\`));
+`;
+  dlFile('server.js', serverJs, 'application/javascript');
+  toast('⬇️ server.js downloaded');
+}
+
+// ══════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════
+function dlFile(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name; a.click();
+}
+
+// ══════════════════════════════════════════════════════
+// SERVICE WORKER REGISTRATION
+// ══════════════════════════════════════════════════════
+// SW code is in Part 2 – loaded as a separate blob
+const SW_CODE = `const CACHE_NAME = 'lodaya-health-v3';
+const ASSETS_TO_CACHE = ['/'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(c => c.addAll(ASSETS_TO_CACHE)).catch(()=>{})
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      const fetchPromise = fetch(e.request).then(res => {
+        if (res && res.status===200 && res.type==='basic') {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c=>c.put(e.request,clone));
+        }
+        return res;
+      }).catch(()=>cached);
+      return cached || fetchPromise;
+    })
+  );
+});
+
+// Push notification handler
+self.addEventListener('push', e => {
+  let data = { title:'Lodaya Health', body:'You have a new notification.' };
+  try { data = e.data ? e.data.json() : data; } catch {}
+  const opts = {
+    body: data.body || '',
+    icon: data.icon || '',
+    badge: data.badge || '',
+    tag: data.tag || 'lodaya-health',
+    data: { url: data.url || '/' },
+    requireInteraction: !!data.requireInteraction,
+    actions: data.actions || [],
+    vibrate: [200, 100, 200],
+  };
+  e.waitUntil(self.registration.showNotification(data.title, opts));
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    clients.matchAll({ type:'window', includeUncontrolled:true }).then(cls => {
+      for (const c of cls) {
+        if (c.url === url && 'focus' in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
+});
+
+// Background sync (for future use)
+self.addEventListener('sync', e => {
+  if (e.tag === 'sync-health-data') {
+    e.waitUntil(syncHealthData());
+  }
+});
+
+async function syncHealthData() {
+  // Reserved for future background data sync
+  console.log('[SW] Background sync triggered');
+}
+`;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/lodaya-health/sw.js', { scope:'/lodaya-health/' })
+    .then(reg => { console.log('[SW] registered'); window._swReg = reg; })
+    .catch(e => console.warn('[SW] error:', e));
+}
+
+// ══════════════════════════════════════════════════════
+// ██████╗  █████╗ ███╗   ███╗██╗███████╗██╗ ██████╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
+// ██╔════╝██╔══██╗████╗ ████║██║██╔════╝██║██╔════╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
+// ██║  ███╗███████║██╔████╔██║██║█████╗  ██║██║     ███████║   ██║   ██║██║   ██║██╔██╗ ██║
+// ██║   ██║██╔══██║██║╚██╔╝██║██║██╔══╝  ██║██║     ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
+// ╚██████╔╝██║  ██║██║ ╚═╝ ██║██║██║     ██║╚██████╗██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
+//  ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝     ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+// FAMILY SCORE ENGINE
+// ══════════════════════════════════════════════════════
+
+// ── POINTS VALUES ──────────────────────────────────────
+const HC = {
+  WEIGHT_LOG:         10,
+  WEIGHT_ON_TRACK:    25,
+  WATER_FULL_DAY:     15,
+  WATER_5DAY_STREAK:  40,
+  WORKOUT_LOG:        20,
+  WORKOUT_3X_WEEK:    30,
+  SMOKE_FREE_DAY:     20,
+  SMOKE_7DAY_STREAK: 100,
+  APPT_ATTENDED:      50,
+  LAB_IMPROVED:       75,
+  FAMILY_GOAL:        50,
+};
+
+// ── BADGE DEFINITIONS ──────────────────────────────────
+const BADGES = {
+  // Weight
+  first_log:       { icon:'📋', label:'First Log',       desc:'Logged your first weekly weight',           cat:'weight'  },
+  first_target:    { icon:'🎯', label:'Target Set',       desc:'Set your first target weight',              cat:'weight'  },
+  first_2kg:       { icon:'📉', label:'First 2kg',        desc:'Lost your first 2 kg toward your goal',     cat:'weight'  },
+  consistent8:     { icon:'🔄', label:'Consistent',       desc:'8 consecutive weeks of weigh-ins',          cat:'weight'  },
+  hit_goal:        { icon:'🏆', label:'Goal Reached',     desc:'Hit your target weight',                    cat:'weight'  },
+
+  // Smoking
+  smoke_day1:      { icon:'🌱', label:'Day One',          desc:'First smoke-free day',                      cat:'smoke'   },
+  smoke_3days:     { icon:'⚡', label:'Three Days',       desc:'3 smoke-free days – the hardest part',      cat:'smoke'   },
+  smoke_week:      { icon:'🔥', label:'One Week',         desc:'7 smoke-free days – body already healing',  cat:'smoke'   },
+  smoke_2weeks:    { icon:'💪', label:'Fortnight',        desc:'14 smoke-free days',                        cat:'smoke'   },
+  smoke_month:     { icon:'🦋', label:'One Month',        desc:'30 smoke-free days – habit broken',         cat:'smoke'   },
+  smoke_3months:   { icon:'🌟', label:'Three Months',     desc:'90 smoke-free days – genuinely free',       cat:'smoke'   },
+  smoke_year:      { icon:'👑', label:'One Year',         desc:'365 smoke-free days – lifetime achievement', cat:'smoke'  },
+
+  // Water
+  water_first:     { icon:'💧', label:'First Sip',        desc:'First full day of 8 glasses',               cat:'water'   },
+  water_wave:      { icon:'🌊', label:'Wave',             desc:'7-day hydration streak',                    cat:'water'   },
+  water_ocean:     { icon:'🌍', label:'Ocean',            desc:'30-day hydration streak',                   cat:'water'   },
+
+  // Workout
+  workout_first:   { icon:'🏃', label:'First Step',       desc:'Logged your first workout',                 cat:'workout' },
+  workout_month:   { icon:'📅', label:'Month Moving',     desc:'12+ workouts in a single month',            cat:'workout' },
+  workout_triple:  { icon:'🎯', label:'Triple Week',      desc:'3 workouts every week for a month',         cat:'workout' },
+
+  // Lab
+  vitd_rising:     { icon:'☀️', label:'Vit D Rising',     desc:'Vitamin D improved from deficient',         cat:'lab'     },
+  b12_back:        { icon:'🧬', label:'B12 Back',         desc:'B12 returned to normal range',              cat:'lab'     },
+  thyroid_stable:  { icon:'🦋', label:'Thyroid Stable',   desc:'TSH within range – huge win for Geeta',     cat:'lab'     },
+  lipids_better:   { icon:'❤️', label:'Lipids Improving', desc:'HDL up or LDL down vs last test',           cat:'lab'     },
+
+  // Family
+  family_week:     { icon:'👨‍👩‍👦‍👦', label:'Family Week',    desc:'Everyone completed a family goal together', cat:'family'  },
+  family_5goals:   { icon:'🌈', label:'Five Goals',       desc:'Family completed 5 collective goals',       cat:'family'  },
+};
+
+// ── WEEKLY FAMILY GOALS (rotate by week number) ────────
+const FAMILY_GOALS = [
+  { id:'hydration',  icon:'💧', title:'Hydration Week',  desc:'Log 56 combined glasses this week (2 per person/day)', check: (data) => {
+    const wk = weekKey(new Date());
+    return MEMBERS.reduce((sum, m) => {
+      const key = `water_${m.key}_${wk}`;
+      return sum + (S.get(key,[]).length);
+    }, 0);
+  }, target: 56 },
+  { id:'active',     icon:'🏋️', title:'Active Week',     desc:'12 combined workouts this week (3 each)', check: (data) => {
+    const wk = weekKey(new Date());
+    const sun = new Date(wk+'T00:00:00'); sun.setDate(sun.getDate()+6); const sunStr = sun.toISOString().split('T')[0];
+    return MEMBERS.reduce((sum, m) => {
+      const logs = S.get(`workout_${m.key}`,[]);
+      return sum + logs.filter(l => l.date >= wk && l.date <= sunStr).length;
+    }, 0);
+  }, target: 12 },
+  { id:'cleanair',   icon:'🚭', title:'Clean Air Week',  desc:'Tejas, Megh & Paresh each have 3+ smoke-free days', check: () => {
+    const wk = weekKey(new Date()); const sun = new Date(wk+'T00:00:00'); sun.setDate(sun.getDate()+6); const sunStr = sun.toISOString().split('T')[0];
+    return MEMBERS.filter(m=>m.smoker).reduce((sum,m)=>{
+      const smokeDates = new Set(S.get(`smoke_${m.key}`,[]).filter(l=>l.date>=wk&&l.date<=sunStr).map(l=>l.date));
+      const allDays = []; let d = new Date(wk+'T00:00:00');
+      while (d.toISOString().split('T')[0] <= sunStr && d <= new Date()) { allDays.push(d.toISOString().split('T')[0]); d.setDate(d.getDate()+1); }
+      const cleanDays = allDays.filter(day=>!smokeDates.has(day)).length;
+      return sum + Math.min(cleanDays, 3);
+    }, 0);
+  }, target: 9 },
+  { id:'checkin',    icon:'⚖️', title:'Check-In Week',   desc:'All 4 members log their weekly weight', check: () => {
+    const wk = weekKey(new Date());
+    return MEMBERS.filter(m => S.get(`weight_${m.key}`,[]).some(e=>e.weekKey===wk)).length;
+  }, target: 4 },
+];
+
+// ── HC CALCULATION ─────────────────────────────────────
+function calcHC(memberKey) {
+  const member = MEMBERS.find(m=>m.key===memberKey);
+  let total = 0; const breakdown = [];
+
+  // Weight points
+  const weights = S.get(`weight_${memberKey}`,[]).sort((a,b)=>a.weekKey.localeCompare(b.weekKey));
+  total += weights.length * HC.WEIGHT_LOG;
+  if (weights.length) breakdown.push({ label:'Weight logs', pts: weights.length * HC.WEIGHT_LOG });
+
+  // Weight on track (within 2kg of target at any point)
+  const target = parseFloat(S.str(`weight_target_${memberKey}`));
+  if (target) {
+    const onTrack = weights.filter(e => Math.abs(e.weight - target) <= 2).length;
+    total += onTrack * HC.WEIGHT_ON_TRACK;
+    if (onTrack) breakdown.push({ label:'On-track weeks', pts: onTrack * HC.WEIGHT_ON_TRACK });
+  }
+
+  // Weight consecutive streak bonus
+  if (weights.length >= 8) { total += HC.WEIGHT_LOG * 5; breakdown.push({ label:'8-week streak bonus', pts: HC.WEIGHT_LOG * 5 }); }
+
+  // Water points – count days with full goal
+  const allWaterKeys = Object.keys(localStorage).filter(k=>k.startsWith(`water_${memberKey}_`));
+  const fullDays = allWaterKeys.filter(k => S.get(k,[]).length >= WATER_GOAL).length;
+  total += fullDays * HC.WATER_FULL_DAY;
+  if (fullDays) breakdown.push({ label:'Full hydration days', pts: fullDays * HC.WATER_FULL_DAY });
+
+  // Water streak bonus
+  const wStreak = calcWaterStreak(memberKey);
+  if (wStreak >= 5) { total += HC.WATER_5DAY_STREAK * Math.floor(wStreak/5); breakdown.push({ label:'Water streak bonus', pts: HC.WATER_5DAY_STREAK * Math.floor(wStreak/5) }); }
+
+  // Workout points
+  const workouts = S.get(`workout_${memberKey}`,[]);
+  total += workouts.length * HC.WORKOUT_LOG;
+  if (workouts.length) breakdown.push({ label:'Workouts logged', pts: workouts.length * HC.WORKOUT_LOG });
+
+  // Workout 3x week bonus
+  const weeklyWorkouts = groupByWeek(workouts);
+  const tripleWeeks = Object.values(weeklyWorkouts).filter(v=>v>=3).length;
+  total += tripleWeeks * HC.WORKOUT_3X_WEEK;
+  if (tripleWeeks) breakdown.push({ label:'3x/week bonus', pts: tripleWeeks * HC.WORKOUT_3X_WEEK });
+
+  // Smoking points (smokers only)
+  if (member?.smoker) {
+    const smokeLogs = S.get(`smoke_${memberKey}`,[]);
+    const allSmokeDates = new Set(smokeLogs.map(l=>l.date));
+    // Count days from first smoke log that are smoke-free
+    if (smokeLogs.length > 0) {
+      const firstDate = new Date(smokeLogs[0].date + 'T00:00:00');
+      const todayD = new Date(); todayD.setHours(0,0,0,0);
+      let smokeFreeDays = 0;
+      let d = new Date(firstDate);
+      while (d <= todayD) {
+        if (!allSmokeDates.has(d.toISOString().split('T')[0])) smokeFreeDays++;
+        d.setDate(d.getDate()+1);
+      }
+      total += smokeFreeDays * HC.SMOKE_FREE_DAY;
+      if (smokeFreeDays) breakdown.push({ label:'Smoke-free days', pts: smokeFreeDays * HC.SMOKE_FREE_DAY });
+
+      // Streak milestones
+      const streak = calcSmokeStreak(smokeLogs);
+      const milestones = [7,14,30,90,365].filter(m=>streak>=m);
+      if (milestones.length) {
+        const bonus = milestones.length * HC.SMOKE_7DAY_STREAK;
+        total += bonus;
+        breakdown.push({ label:`Streak milestones (${milestones.join(', ')}d)`, pts: bonus });
+      }
+    }
+  }
+
+  // Appointments
+  const appts = S.get('appointments',[]).filter(a=>a.person===memberKey && daysUntil(a.date)<0);
+  total += appts.length * HC.APPT_ATTENDED;
+  if (appts.length) breakdown.push({ label:'Appointments kept', pts: appts.length * HC.APPT_ATTENDED });
+
+  return { total, breakdown };
+}
+
+function groupByWeek(workouts) {
+  const counts = {};
+  workouts.forEach(w => {
+    const wk = weekKey(new Date(w.date+'T00:00:00'));
+    counts[wk] = (counts[wk]||0) + 1;
+  });
+  return counts;
+}
+
+function calcWaterStreak(memberKey) {
+  let streak = 0;
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-1); // start from yesterday
+  while (true) {
+    const dk = d.toISOString().split('T')[0];
+    const glasses = S.get(`water_${memberKey}_${dk}`,[]).length;
+    if (glasses < WATER_GOAL) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+    if (streak > 365) break;
+  }
+  return streak;
+}
+
+// ── BADGE EVALUATION ───────────────────────────────────
+function evalBadges(memberKey) {
+  const member = MEMBERS.find(m=>m.key===memberKey);
+  const earned = new Set(S.get(`badges_${memberKey}`,[]).map(b=>b.id));
+  const newlyEarned = [];
+
+  const weights = S.get(`weight_${memberKey}`,[]).sort((a,b)=>a.weekKey.localeCompare(b.weekKey));
+  const target  = parseFloat(S.str(`weight_target_${memberKey}`));
+  const workouts = S.get(`workout_${memberKey}`,[]);
+  const smokeLogs = S.get(`smoke_${memberKey}`,[]);
+  const streak   = member?.smoker ? calcSmokeStreak(smokeLogs) : 0;
+  const wStreak  = calcWaterStreak(memberKey);
+  const allWaterKeys = Object.keys(localStorage).filter(k=>k.startsWith(`water_${memberKey}_`));
+  const fullDays = allWaterKeys.filter(k=>S.get(k,[]).length>=WATER_GOAL).length;
+
+  const check = (id, condition) => {
+    if (condition && !earned.has(id)) {
+      earned.add(id);
+      newlyEarned.push(id);
+      return true;
+    }
+    return earned.has(id);
+  };
+
+  // Weight badges
+  check('first_log',    weights.length >= 1);
+  check('first_target', !!target);
+  check('consistent8',  weights.length >= 8);
+  if (target && weights.length >= 2) {
+    const start = weights[0].weight;
+    const diff  = start - weights[weights.length-1].weight;
+    check('first_2kg', diff >= 2);
+    check('hit_goal',  weights[weights.length-1].weight <= target + 0.5);
+  }
+
+  // Water badges
+  check('water_first',  fullDays >= 1);
+  check('water_wave',   wStreak >= 7);
+  check('water_ocean',  wStreak >= 30);
+
+  // Workout badges
+  check('workout_first',  workouts.length >= 1);
+  const weeklyW = groupByWeek(workouts);
+  const monthWorkouts = workouts.filter(w => {
+    const d = new Date(w.date+'T00:00:00');
+    const now = new Date();
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).length;
+  check('workout_month', monthWorkouts >= 12);
+  const tripleWeeks = Object.values(weeklyW).filter(v=>v>=3).length;
+  check('workout_triple', tripleWeeks >= 4);
+
+  // Smoking badges (smokers only)
+  if (member?.smoker) {
+    check('smoke_day1',    streak >= 1  || smokeLogs.length===0 && false); // only if they've started tracking
+    if (smokeLogs.length > 0) {
+      check('smoke_day1',   streak >= 1);
+      check('smoke_3days',  streak >= 3);
+      check('smoke_week',   streak >= 7);
+      check('smoke_2weeks', streak >= 14);
+      check('smoke_month',  streak >= 30);
+      check('smoke_3months',streak >= 90);
+      check('smoke_year',   streak >= 365);
+    }
+  }
+
+  // Persist updated badges
+  if (newlyEarned.length) {
+    const existing = S.get(`badges_${memberKey}`,[]);
+    newlyEarned.forEach(id => existing.push({ id, earnedAt: new Date().toISOString() }));
+    S.set(`badges_${memberKey}`, existing);
+  }
+
+  return {
+    earned: S.get(`badges_${memberKey}`,[]).map(b=>b.id),
+    newlyEarned
+  };
+}
+
+// ── FAMILY GOAL PROGRESS ───────────────────────────────
+function getFamilyGoalProgress() {
+  const wkNum = weekNum(weekKey(new Date()));
+  const goal = FAMILY_GOALS[wkNum % FAMILY_GOALS.length];
+  const current = goal.check();
+  return { goal, current, pct: Math.min(100, Math.round(current/goal.target*100)) };
+}
+
+// ── WEEKLY SUMMARY ─────────────────────────────────────
+function getWeeklySummary() {
+  const wk = weekKey(new Date());
+  const sun = new Date(wk+'T00:00:00'); sun.setDate(sun.getDate()+6); const sunStr = sun.toISOString().split('T')[0];
+  return MEMBERS.map(m => {
+    const weightLogged = S.get(`weight_${m.key}`,[]).some(e=>e.weekKey===wk);
+    const workoutDays  = S.get(`workout_${m.key}`,[]).filter(l=>l.date>=wk&&l.date<=sunStr).length;
+    const waterDays    = (() => { let cnt=0; let d=new Date(wk+'T00:00:00'); while(d.toISOString().split('T')[0]<=sunStr&&d<=new Date()){if(S.get(`water_${m.key}_${d.toISOString().split('T')[0]}`,[]).length>=WATER_GOAL)cnt++;d.setDate(d.getDate()+1);} return cnt; })();
+    const smokeFree    = m.smoker ? (() => {
+      const smokeDates = new Set(S.get(`smoke_${m.key}`,[]).filter(l=>l.date>=wk&&l.date<=sunStr).map(l=>l.date));
+      let cnt=0; let d=new Date(wk+'T00:00:00'); const now=new Date(); now.setHours(0,0,0,0);
+      while(d<=now&&d.toISOString().split('T')[0]<=sunStr){if(!smokeDates.has(d.toISOString().split('T')[0]))cnt++;d.setDate(d.getDate()+1);}
+      return cnt;
+    })() : null;
+    const streak = m.smoker ? calcSmokeStreak(S.get(`smoke_${m.key}`,[])) : null;
+    return { member:m, weightLogged, workoutDays, waterDays, smokeFree, streak };
+  });
+}
+
+// ── LEVEL SYSTEM ───────────────────────────────────────
+function getLevel(hc) {
+  if (hc <  200) return { num:1, name:'Seedling',    icon:'🌱', next:200,    color:'var(--text3)'  };
+  if (hc <  500) return { num:2, name:'Sprouting',   icon:'🌿', next:500,    color:'var(--green)'  };
+  if (hc < 1000) return { num:3, name:'Growing',     icon:'🌳', next:1000,   color:'var(--accent)' };
+  if (hc < 2000) return { num:4, name:'Thriving',    icon:'💪', next:2000,   color:'var(--blue)'   };
+  if (hc < 4000) return { num:5, name:'Flourishing', icon:'⭐', next:4000,   color:'var(--orange)' };
+  return               { num:6, name:'Legendary',    icon:'👑', next: null,   color:'var(--purple)' };
+}
+
+// ── RENDER SCORE PAGE ──────────────────────────────────
+function renderScore() {
+  const summary   = getWeeklySummary();
+  const { goal, current, pct } = getFamilyGoalProgress();
+
+  // Notify newly earned badges
+  MEMBERS.forEach(m => {
+    const { newlyEarned } = evalBadges(m.key);
+    newlyEarned.forEach(id => {
+      setTimeout(() => toast(`🎉 ${m.name} earned: ${BADGES[id]?.icon} ${BADGES[id]?.label}!`), 800);
+    });
+  });
+
+  // Per-member HC
+  const memberScores = MEMBERS.map(m => {
+    const { total, breakdown } = calcHC(m.key);
+    const lvl = getLevel(total);
+    const { earned } = evalBadges(m.key);
+    return { member:m, total, breakdown, lvl, earned };
+  });
+
+  // Family total
+  const familyTotal = memberScores.reduce((s,m)=>s+m.total,0);
+  const familyLevel = getLevel(Math.round(familyTotal/4));
+
+  let html = `
+<!-- FAMILY TOTAL ─────────────────────────────── -->
+<div class="card card-glow anim" style="background:linear-gradient(135deg,var(--bg2),var(--bg3));border-color:rgba(200,255,62,0.2)">
+  <div class="section-head" style="color:var(--accent)">Lodaya Family Score</div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="font-size:48px;line-height:1">${familyLevel.icon}</div>
+    <div>
+      <div style="font-family:'Playfair Display',serif;font-size:40px;font-weight:600;line-height:1;color:var(--accent)">${familyTotal.toLocaleString()}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px">Health Coins · Family Level ${familyLevel.num} – ${familyLevel.name}</div>
+    </div>
+  </div>
+  ${familyLevel.next ? `
+  <div class="prog-wrap">
+    <div class="prog-meta"><span>Level ${familyLevel.num+1} unlocks at avg ${familyLevel.next} HC/person</span><span>${Math.max(0,familyLevel.next*4-familyTotal)} to go</span></div>
+    <div class="prog-bg"><div class="prog-fill" style="width:${Math.min(100,Math.round(familyTotal/(familyLevel.next*4)*100))}%;background:var(--accent)"></div></div>
+  </div>` : '<div style="margin-top:10px;font-size:13px;color:var(--purple)">👑 Maximum family level achieved</div>'}
+</div>
+
+<!-- FAMILY GOAL ──────────────────────────────── -->
+<div class="card anim" style="border-color:rgba(92,168,255,0.2)">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">This Week's Family Goal</div>
+      <div style="font-size:17px;font-weight:600">${goal.icon} ${goal.title}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px">${goal.desc}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;margin-left:12px">
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:${pct>=100?'var(--green)':'var(--text)'}">${current}<span style="font-size:14px;color:var(--text3)">/${goal.target}</span></div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px">${pct}% done</div>
+    </div>
+  </div>
+  <div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--green)':'var(--blue)'}"></div></div>
+  ${pct>=100?`<div style="margin-top:10px;font-size:13px;color:var(--green);font-weight:600">🎉 Family goal complete! Everyone earns +${HC.FAMILY_GOAL} HC</div>`:''}
+</div>
+
+<!-- WEEKLY SUMMARY ───────────────────────────── -->
+<div class="section-head">This Week – ${weekLabel(weekKey(new Date()))}</div>
+<div class="card anim" style="padding:0">
+  ${summary.map(row => `
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px">
+    <div style="width:36px;height:36px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+      ${getLevel(calcHC(row.member.key).total).icon}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">${row.member.name}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${row.weightLogged ? `<span style="font-size:11px;background:var(--accent-d);color:var(--accent);padding:2px 8px;border-radius:8px">⚖️ Logged</span>` : `<span style="font-size:11px;background:var(--bg4);color:var(--text3);padding:2px 8px;border-radius:8px">⚖️ Not yet</span>`}
+        <span style="font-size:11px;background:${row.waterDays>=5?'var(--blue-d)':row.waterDays>0?'var(--bg4)':'var(--bg4)'};color:${row.waterDays>=5?'var(--blue)':'var(--text3)'};padding:2px 8px;border-radius:8px">💧 ${row.waterDays}/7 days</span>
+        ${row.workoutDays>0?`<span style="font-size:11px;background:var(--green-d);color:var(--green);padding:2px 8px;border-radius:8px">🏋️ ${row.workoutDays} workout${row.workoutDays>1?'s':''}</span>`:``}
+        ${row.member.smoker && row.smokeFree!==null ? `<span style="font-size:11px;background:${row.smokeFree>=5?'var(--green-d)':row.smokeFree>=3?'var(--accent-d)':'var(--smoke-d)'};color:${row.smokeFree>=5?'var(--green)':row.smokeFree>=3?'var(--accent)':'var(--smoke)'};padding:2px 8px;border-radius:8px">🚭 ${row.smokeFree} clean day${row.smokeFree!==1?'s':''}</span>` : ''}
+        ${row.streak>0?`<span style="font-size:11px;background:var(--orange-d);color:var(--orange);padding:2px 8px;border-radius:8px">🔥 ${row.streak}d streak</span>`:''}
+      </div>
+    </div>
+  </div>`).join('')}
+</div>
+
+<!-- INDIVIDUAL SCORES ────────────────────────── -->
+<div class="section-head" style="margin-top:8px">Individual Health Coins</div>
+${memberScores.map(ms => {
+  const lvl = ms.lvl;
+  const lvlPct = lvl.next ? Math.min(100, Math.round(ms.total/lvl.next*100)) : 100;
+  const earnedBadges = ms.earned.map(id => BADGES[id]).filter(Boolean);
+  const lockedBadges = Object.entries(BADGES)
+    .filter(([id]) => !ms.earned.includes(id))
+    .filter(([id, b]) => {
+      if (b.cat==='smoke' && !ms.member.smoker) return false;
+      return true;
+    })
+    .map(([id,b])=>({id,...b}));
+
+  return `
+  <div class="card anim" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="font-size:32px">${lvl.icon}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-family:'Playfair Display',serif;font-size:18px">${ms.member.name}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;color:${lvl.color}">${ms.total.toLocaleString()} <span style="font-size:11px;color:var(--text3)">HC</span></div>
+        </div>
+        <div style="font-size:11px;color:${lvl.color};margin-top:1px">Level ${lvl.num} · ${lvl.name}</div>
+      </div>
+    </div>
+    ${lvl.next ? `
+    <div class="prog-wrap" style="margin-top:0">
+      <div class="prog-meta"><span>Level ${lvl.num+1}: ${lvl.name}</span><span>${Math.max(0,lvl.next-ms.total)} HC to go</span></div>
+      <div class="prog-bg"><div class="prog-fill" style="width:${lvlPct}%;background:${lvl.color}"></div></div>
+    </div>` : ''}
+
+    ${ms.breakdown.length ? `
+    <details style="margin-top:12px">
+      <summary style="font-size:12px;color:var(--text3);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+        <span>▸</span> <span>HC breakdown</span>
+      </summary>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+        ${ms.breakdown.map(b=>`
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)">
+          <span>${b.label}</span>
+          <span style="color:var(--accent);font-weight:600">+${b.pts}</span>
+        </div>`).join('')}
+      </div>
+    </details>` : ''}
+
+    <!-- BADGES EARNED -->
+    ${earnedBadges.length ? `
+    <div style="margin-top:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Badges (${earnedBadges.length}/${earnedBadges.length+lockedBadges.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${earnedBadges.map(b=>`
+        <div title="${b.desc}" style="display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:5px 10px;font-size:12px;cursor:default">
+          <span>${b.icon}</span><span style="font-weight:500">${b.label}</span>
+        </div>`).join('')}
+        ${lockedBadges.slice(0,3).map(b=>`
+        <div title="${b.desc} (locked)" style="display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:5px 10px;font-size:12px;opacity:0.35;cursor:default;filter:grayscale(1)">
+          <span>${b.icon}</span><span>${b.label}</span>
+        </div>`).join('')}
+        ${lockedBadges.length>3?`<div style="font-size:11px;color:var(--text3);padding:5px 6px">+${lockedBadges.length-3} more to unlock</div>`:''}
+      </div>
+    </div>` : `
+    <div style="margin-top:14px;font-size:12px;color:var(--text3)">Start logging to earn your first badge 🌱</div>`}
+  </div>`;
+}).join('')}
+
+<!-- HOW TO EARN ──────────────────────────────── -->
+<div class="section-head" style="margin-top:8px">How to Earn Health Coins</div>
+<div class="card" style="font-size:13px;color:var(--text2)">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    ${[
+      ['⚖️ Weekly weigh-in','10 HC'],
+      ['🎯 On-track week','25 HC'],
+      ['💧 8 glasses/day','15 HC'],
+      ['🏋️ Log a workout','20 HC'],
+      ['🏋️ 3 workouts/week','30 HC bonus'],
+      ['🚭 Smoke-free day','20 HC'],
+      ['🔥 7-day streak','100 HC'],
+      ['🏥 Appt attended','50 HC'],
+    ].map(([a,b])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>${a}</span><span style="color:var(--accent);font-weight:600">${b}</span></div>`).join('')}
+  </div>
+  <div style="margin-top:12px;font-size:11px;color:var(--text3);line-height:1.6">No negative points. No pressure. Coins only go up. The system celebrates every step forward. 🌱</div>
+</div>`;
+
+  document.getElementById('scoreContent').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════
+// OFFLINE DETECTION
+// ══════════════════════════════════════════════════════
+window.addEventListener('online',  () => document.getElementById('offlineBar').classList.remove('visible'));
+window.addEventListener('offline', () => document.getElementById('offlineBar').classList.add('visible'));
+if (!navigator.onLine) document.getElementById('offlineBar').classList.add('visible');
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+renderWeight();
+if (Notification.permission==='granted') scheduleLocalNotifs();
+</script>
+
+<!-- PART 2: SERVICE WORKER + FINALIZATION will replace SW_PLACEHOLDER -->
+</body>
+</html>
